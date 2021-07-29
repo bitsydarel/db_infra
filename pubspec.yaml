@@ -1,6 +1,6 @@
 name: db_infra
-description: A sample command-line application.
-version: 1.0.0
+description: A command-line tool that help to automate your release workflow.
+version: 0.0.1
 author: bitsydarel@gmail.com
 homepage: https://github.com/db_infra
 
@@ -8,16 +8,17 @@ environment:
   sdk: '>=2.13.4 <3.0.0'
 
 dependencies:
-  args: ^2.1.1
+  args: ^2.2.0
   http: ^0.13.3
   io: ^1.0.3
   jose: ^0.3.2
-  json_annotation: ^4.1.0
   meta: ^1.7.0
   path: ^1.8.0
 
 dev_dependencies:
   build_runner: ^2.0.6
   flutter_code_style: ^2.1.0
-  json_serializable: ^5.0.0
   test: ^1.17.10
+
+executables:
+  db_infra:

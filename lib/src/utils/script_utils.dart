@@ -3,9 +3,19 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:db_infra/src/infra_configuration.dart';
+import 'package:db_infra/src/infra_manager.dart';
 import 'package:db_infra/src/infra_managers/disk_infra_manager.dart';
+import 'package:db_infra/src/run_configuration.dart';
 import 'package:db_infra/src/setup_configuration.dart';
+import 'package:db_infra/src/software_builders/apple/api/appstoreconnectapi_bundle_id.dart';
+import 'package:db_infra/src/software_builders/apple/api/appstoreconnectapi_certificates.dart';
+import 'package:db_infra/src/software_builders/apple/api/appstoreconnectapi_profiles.dart';
+import 'package:db_infra/src/software_builders/apple/bundle_id_manager.dart';
+import 'package:db_infra/src/software_builders/apple/certificates_manager.dart';
+import 'package:db_infra/src/software_builders/apple/keychains_manager.dart';
+import 'package:db_infra/src/software_builders/apple/profiles_manager.dart';
 import 'package:db_infra/src/utils/constants.dart';
+import 'package:db_infra/src/utils/network_manager.dart';
 import 'package:io/ansi.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
@@ -100,7 +110,7 @@ void printHelpMessage([final String? message]) {
       LineSplitter.split(argumentParser.usage).map((String l) => l).join('\n');
 
   stdout.writeln(
-    'Usage: db_infra setup '
+    'Usage: db_infra --setup|--build <required options> '
     '<local project directory>\nOptions:\n$options',
   );
 }
@@ -339,6 +349,52 @@ extension ArgResultsExtension on ArgResults {
       return argumentValue;
     }
     return null;
+  }
+}
+
+///
+extension RunConfigurationExtensions on RunConfiguration {
+  ///
+  ProfilesManager getProfilesManager() {
+    return ProfilesManager(
+      api: AppStoreConnectApiProfiles(
+        configuration: this,
+        httpClient: networkManager,
+      ),
+    );
+  }
+
+  ///
+  CertificatesManager getCertificatesManager() {
+    final KeychainsManager keychainsManager =
+        KeychainsManager(appKeychain: iosAppId);
+
+    return CertificatesManager(
+      keychainsManager: keychainsManager,
+      httpClient: networkManager,
+      api: AppStoreConnectApiCertificates(
+        configuration: this,
+        httpClient: networkManager,
+      ),
+    );
+  }
+
+  ///
+  BundleIdManager getBundleManager() {
+    return BundleIdManager(
+      api: AppStoreConnectApiBundleId(
+        configuration: this,
+        httpClient: networkManager,
+      ),
+    );
+  }
+
+  ///
+  InfraManager getInfraManager() {
+    return DiskInfraManager(
+      projectDir: projectDir,
+      storageDirectory: Directory('${Directory.current.path}/.infra_tools'),
+    );
   }
 }
 
