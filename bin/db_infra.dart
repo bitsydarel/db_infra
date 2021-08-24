@@ -2,9 +2,11 @@ import 'dart:io';
 
 import 'package:db_infra/db_infra.dart';
 import 'package:args/args.dart';
+import 'package:db_infra/src/utils/exceptions.dart';
+import 'package:io/io.dart';
 
 Future<void> main(List<String> arguments) async {
-  final RunConfiguration configuration;
+  final DBInfra dbInfra;
 
   try {
     final ArgResults argResult = argumentParser.parse(arguments);
@@ -28,42 +30,31 @@ Future<void> main(List<String> arguments) async {
       );
     }
 
-    configuration = argResult.runSetup
-        ? argResult.toSetupConfiguration()
-        : await argResult.toBuildConfiguration();
+    final Directory projectDir = argResult.getProjectDirectory();
+
+    final Directory infraDir = Directory('${projectDir.path}/.infra')
+      ..createSync();
+
+    dbInfra = DBInfra(projectDirectory: projectDir, infraDirectory: infraDir);
+
+    if (argResult.runSetup) {
+      final InfraSetupConfiguration configuration =
+          argResult.toSetupConfiguration(infraDir);
+
+      await dbInfra.setup(configuration);
+    } else {
+      await dbInfra.build();
+    }
+
+    await dbInfra.cleanup();
+
+    exit(ExitCode.success.code);
   } on Exception catch (e) {
-    printHelpMessage(e is FormatException ? e.message : null);
-    return;
-  }
-
-  final ProfilesManager profilesManager = configuration.getProfilesManager();
-
-  final CertificatesManager certificatesManager =
-      configuration.getCertificatesManager();
-
-  if (configuration is SetupConfiguration) {
-    final BundleIdManager bundleIdManager = configuration.getBundleManager();
-
-    final IosSetupExecutor iosSetupExecutor = IosSetupExecutor(
-      configuration: configuration,
-      profilesManager: profilesManager,
-      certificatesManager: certificatesManager,
-      bundleIdManager: bundleIdManager,
-    );
-
-    final InfraConfiguration infraConfiguration =
-        await iosSetupExecutor.setupInfra();
-
-    final InfraManager infraManager = configuration.getInfraManager();
-
-    await infraManager.saveConfiguration(infraConfiguration);
-  } else if (configuration is InfraConfiguration) {
-    final FlutterIosBuildExecutor executor = FlutterIosBuildExecutor(
-      configuration: configuration,
-      certificatesManager: certificatesManager,
-      profilesManager: profilesManager,
-    );
-
-    await executor.build();
+    printHelpMessage(e is FormatException ? e.message : e.toString());
+    if (e is UnrecoverableException) {
+      exit(e.exitCode);
+    } else {
+      exit(ExitCode.osError.code);
+    }
   }
 }

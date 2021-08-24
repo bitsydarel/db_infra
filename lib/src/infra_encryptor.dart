@@ -1,0 +1,35 @@
+import 'dart:io';
+
+import 'package:db_infra/src/utils/types.dart';
+
+/// Infrastructure file encryptor.
+abstract class InfraEncryptor {
+  /// The infrastructure directory.
+  final Directory infraDirectory;
+
+  /// A const constructor to allow child to define their const constructor.
+  const InfraEncryptor(this.infraDirectory);
+
+  /// Encrypt [files].
+  ///
+  /// Returns the new created files that have been encrypted.
+  Future<List<File>> encryptFiles(final List<File> files);
+
+  /// Decrypt [files].
+  ///
+  /// Return the new created files that have been decrypted.
+  Future<List<File>> decryptFiles(final List<File> files);
+
+  /// Encrypt the [text].
+  ///
+  /// returns the encrypted version of the [text].
+  Future<String> encrypt(final String text);
+
+  /// Decrypt the [encryptedText].
+  ///
+  /// returns the decrypted version of the [encryptedText].
+  Future<String> decrypt(final String encryptedText);
+
+  /// Convert the encryptor to json.
+  JsonMap toJson();
+}

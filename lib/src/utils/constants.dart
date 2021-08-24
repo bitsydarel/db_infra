@@ -54,3 +54,33 @@ const String iosDistributionProvisionProfileUUIDArg =
 
 /// iOS distribution certificate id.
 const String iosDistributionCertificateIdArg = 'ios-certificate-id';
+
+/// Infrastructure storage type.
+const String infraStorageTypeArg = 'storage-type';
+
+/// Infrastructure encryption type.
+const String infraEncryptorTypeArg = 'encryptor-type';
+
+/// Infrastructure disk storage location.
+const String infraDiskStorageLocationArg = 'disk-storage-location';
+
+/// Infrastructure ios build output type.
+const String infraIosBuildOutputTypeArg = 'ios-build-output-type';
+
+/// Infrastructure android build output type.
+const String infraAndroidBuildOutputTypeArg = 'android-build-output-type';
+
+/// Infrastructure ftp username.
+const String infraFtpUsernameArg = 'ftp-username';
+
+/// Infrastructure ftp password.
+const String infraFtpPasswordArg = 'ftp-password';
+
+/// Infrastructure ftp server url.
+const String infraFtpUrlArg = 'ftp-url';
+
+/// Infrastructure ftp server url.
+const String infraFtpPortArg = 'ftp-port';
+
+/// Infrastructure ftp folder name.
+const String infraFtpFolderNameArg = 'ftp-folder-name';
