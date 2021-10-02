@@ -1,14 +1,14 @@
 import 'dart:io';
 
-import 'package:db_infra/src/infra_build_output_type.dart';
-import 'package:db_infra/src/infra_run_configuration.dart';
-import 'package:db_infra/src/infra_encryptor.dart';
-import 'package:db_infra/src/infra_encryptor_type.dart';
-import 'package:db_infra/src/infra_storage.dart';
-import 'package:db_infra/src/infra_storage_type.dart';
+import 'package:db_infra/src/build_output_type.dart';
+import 'package:db_infra/src/encryptor.dart';
+import 'package:db_infra/src/encryptor_type.dart';
+import 'package:db_infra/src/run_configuration.dart';
+import 'package:db_infra/src/storage.dart';
+import 'package:db_infra/src/storage_type.dart';
 
 ///
-class InfraSetupConfiguration extends InfraRunConfiguration {
+class InfraSetupConfiguration extends RunConfiguration {
   ///
   final String? iosCertificateSigningRequestPath;
 
@@ -34,12 +34,12 @@ class InfraSetupConfiguration extends InfraRunConfiguration {
     required String iosAppStoreConnectKeyId,
     required String iosAppStoreConnectKeyIssuer,
     required File iosAppStoreConnectKey,
-    required InfraStorage storage,
-    required InfraEncryptor encryptor,
-    required InfraStorageType storageType,
-    required InfraEncryptorType encryptorType,
-    required InfraIosBuildOutputType iosBuildOutputType,
-    required InfraAndroidBuildOutputType androidBuildOutputType,
+    required Storage storage,
+    required Encryptor encryptor,
+    required StorageType storageType,
+    required EncryptorType encryptorType,
+    required IosBuildOutputType iosBuildOutputType,
+    required AndroidBuildOutputType androidBuildOutputType,
     this.iosCertificateSigningRequestPath,
     this.iosCertificateSigningRequestPrivateKeyPath,
     this.iosCertificateSigningRequestName,

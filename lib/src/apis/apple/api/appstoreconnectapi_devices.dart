@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:db_infra/src/apis/apple/api/appstoreconnectapi.dart';
 import 'package:db_infra/src/apis/apple/api/device_dto.dart';
 import 'package:db_infra/src/apis/apple/device.dart';
-import 'package:db_infra/src/infra_run_configuration.dart';
+import 'package:db_infra/src/run_configuration.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/types.dart';
 import 'package:http/http.dart';
@@ -15,7 +15,7 @@ class AppStoreConnectApiDevices extends AppStoreConnectApi<Device> {
   ///
   AppStoreConnectApiDevices({
     required Client httpClient,
-    required InfraRunConfiguration configuration,
+    required RunConfiguration configuration,
   }) : super(httpClient: httpClient, configuration: configuration);
 
   @override

@@ -1,14 +1,14 @@
 import 'dart:io';
 
-import 'package:db_infra/src/infra_logger.dart';
-import 'package:db_infra/src/infra_storage.dart';
+import 'package:db_infra/src/logger.dart';
+import 'package:db_infra/src/storage.dart';
 import 'package:db_infra/src/utils/types.dart';
 
 ///
-class InfraGoogleCloudStorage extends InfraStorage {
+class GoogleCloudStorage extends Storage {
   ///
-  const InfraGoogleCloudStorage(
-    InfraLogger logger,
+  const GoogleCloudStorage(
+    Logger logger,
     Directory infraDirectory,
   ) : super(logger, infraDirectory);
 

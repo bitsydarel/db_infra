@@ -1,35 +1,35 @@
 import 'dart:io';
 
-import 'package:db_infra/src/infra_logger.dart';
-import 'package:db_infra/src/infra_storage.dart';
-import 'package:db_infra/src/infra_storage_type.dart';
-import 'package:db_infra/src/infra_storages/infra_disk_storage.dart';
-import 'package:db_infra/src/infra_storages/infra_ftp_storage.dart';
+import 'package:db_infra/src/logger.dart';
+import 'package:db_infra/src/storage.dart';
+import 'package:db_infra/src/storage_type.dart';
+import 'package:db_infra/src/storages/disk_storage.dart';
+import 'package:db_infra/src/storages/ftp_storage.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/types.dart';
 import 'package:io/io.dart';
 
 /// Infrastructure storage type extension.
-extension InfraStorageTypeExtension on InfraStorageType {
+extension StorageTypeExtension on StorageType {
   ///
-  InfraStorage fromJson(
+  Storage fromJson(
     final JsonMap json,
-    final InfraLogger logger,
+    final Logger logger,
     final Directory infraDirectory,
   ) {
     switch (this) {
-      case InfraStorageType.disk:
-        return InfraDiskStorage.fromJson(json, logger, infraDirectory);
-      case InfraStorageType.ftp:
-        return InfraFtpStorage.fromJson(json, logger, infraDirectory);
+      case StorageType.disk:
+        return DiskStorage.fromJson(json, logger, infraDirectory);
+      case StorageType.ftp:
+        return FtpStorage.fromJson(json, logger, infraDirectory);
       default:
         throw UnsupportedError('${enumName(this)} is not supported');
     }
   }
 
   ///
-  InfraStorage from({
-    required final InfraLogger infraLogger,
+  Storage from({
+    required final Logger infraLogger,
     required final Directory infraDirectory,
     final Directory? storageDirectory,
     final String? ftpUsername,
@@ -39,9 +39,9 @@ extension InfraStorageTypeExtension on InfraStorageType {
     final String? ftpServerFolderName,
   }) {
     switch (this) {
-      case InfraStorageType.disk:
+      case StorageType.disk:
         if (storageDirectory != null) {
-          return InfraDiskStorage(
+          return DiskStorage(
             storageDirectory: storageDirectory,
             logger: infraLogger,
             infraDirectory: infraDirectory,
@@ -53,13 +53,13 @@ extension InfraStorageTypeExtension on InfraStorageType {
           'request but storage directory not specified',
           ExitCode.config.code,
         );
-      case InfraStorageType.ftp:
+      case StorageType.ftp:
         if (ftpUsername != null &&
             ftpPassword != null &&
             ftpServerUrl != null &&
             ftpServerPort != null &&
             ftpServerFolderName != null) {
-          return InfraFtpStorage(
+          return FtpStorage(
             username: ftpUsername,
             password: ftpPassword,
             serverUrl: ftpServerUrl,

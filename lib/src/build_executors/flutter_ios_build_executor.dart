@@ -1,19 +1,19 @@
 import 'dart:io';
 
-import 'package:db_infra/src/infra_configurations/infra_configuration.dart';
-import 'package:db_infra/src/shell_runner.dart';
-import 'package:db_infra/src/infra_build_executor.dart';
 import 'package:db_infra/src/apis/apple/certificate.dart';
 import 'package:db_infra/src/apis/apple/certificates_manager.dart';
 import 'package:db_infra/src/apis/apple/profile.dart';
 import 'package:db_infra/src/apis/apple/profiles_manager.dart';
+import 'package:db_infra/src/build_executor.dart';
+import 'package:db_infra/src/build_output_type.dart';
+import 'package:db_infra/src/configurations/infra_build_configuration.dart';
+import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
-import 'package:db_infra/src/infra_build_output_type.dart';
 import 'package:io/io.dart';
 import 'package:path/path.dart' as path;
 
 ///
-class InfraFlutterIosBuildExecutor extends InfraBuildExecutor {
+class FlutterIosBuildExecutor extends BuildExecutor {
   ///
   final CertificatesManager certificatesManager;
 
@@ -24,11 +24,11 @@ class InfraFlutterIosBuildExecutor extends InfraBuildExecutor {
   final ShellRunner runner;
 
   ///
-  const InfraFlutterIosBuildExecutor({
+  const FlutterIosBuildExecutor({
     required this.certificatesManager,
     required this.profilesManager,
     required Directory projectDirectory,
-    required InfraConfiguration configuration,
+    required InfraBuildConfiguration configuration,
     this.runner = const ShellRunner(),
   }) : super(projectDirectory: projectDirectory, configuration: configuration);
 

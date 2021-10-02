@@ -1,21 +1,21 @@
 import 'dart:io';
 
-import 'package:db_infra/src/infra_build_output_type.dart';
-import 'package:db_infra/src/infra_encryptor.dart';
-import 'package:db_infra/src/infra_encryptor_type.dart';
-import 'package:db_infra/src/infra_logger.dart';
-import 'package:db_infra/src/infra_storage.dart';
-import 'package:db_infra/src/infra_run_configuration.dart';
-import 'package:db_infra/src/infra_storage_type.dart';
+import 'package:db_infra/src/build_output_type.dart';
+import 'package:db_infra/src/encryptor.dart';
+import 'package:db_infra/src/encryptor_type.dart';
+import 'package:db_infra/src/logger.dart';
+import 'package:db_infra/src/run_configuration.dart';
+import 'package:db_infra/src/storage.dart';
+import 'package:db_infra/src/storage_type.dart';
+import 'package:db_infra/src/storages/storage_factory.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
-import 'package:db_infra/src/utils/types.dart';
 import 'package:db_infra/src/utils/infra_extensions.dart';
-import 'package:db_infra/src/infra_storages/infra_storage_factory.dart';
+import 'package:db_infra/src/utils/types.dart';
 import 'package:io/io.dart';
 import 'package:path/path.dart' as path;
 
 ///
-class InfraConfiguration extends InfraRunConfiguration {
+class InfraBuildConfiguration extends RunConfiguration {
   ///
   final File iosCertificateSigningRequest;
 
@@ -38,18 +38,18 @@ class InfraConfiguration extends InfraRunConfiguration {
   final File iosExportOptionsPlist;
 
   ///
-  InfraConfiguration({
+  InfraBuildConfiguration({
     required String androidAppId,
     required String iosAppId,
     required String iosAppStoreConnectKeyId,
     required String iosAppStoreConnectKeyIssuer,
     required File iosAppStoreConnectKey,
-    required InfraStorage storage,
-    required InfraEncryptor encryptor,
-    required InfraStorageType storageType,
-    required InfraEncryptorType encryptorType,
-    required InfraIosBuildOutputType iosBuildOutputType,
-    required InfraAndroidBuildOutputType androidBuildOutputType,
+    required Storage storage,
+    required Encryptor encryptor,
+    required StorageType storageType,
+    required EncryptorType encryptorType,
+    required IosBuildOutputType iosBuildOutputType,
+    required AndroidBuildOutputType androidBuildOutputType,
     required this.iosCertificateSigningRequest,
     required this.iosCertificateSigningRequestPrivateKey,
     required this.iosCertificateSigningRequestName,
@@ -72,12 +72,12 @@ class InfraConfiguration extends InfraRunConfiguration {
         );
 
   ///
-  static Future<InfraConfiguration> fromJson({
+  static Future<InfraBuildConfiguration> fromJson({
     required final JsonMap json,
-    required final InfraStorageType infraStorageType,
-    required final InfraEncryptorType infraEncryptorType,
-    required final InfraEncryptor infraEncryptor,
-    required final InfraLogger logger,
+    required final StorageType infraStorageType,
+    required final EncryptorType infraEncryptorType,
+    required final Encryptor infraEncryptor,
+    required final Logger logger,
     required final Directory infraDir,
   }) async {
     final Object? androidAppId = json['androidAppId'];
@@ -125,7 +125,7 @@ class InfraConfiguration extends InfraRunConfiguration {
             ExitCode.config.code,
           );
 
-    return InfraConfiguration(
+    return InfraBuildConfiguration(
       androidAppId: androidAppId is String
           ? androidAppId
           : throw ArgumentError(androidAppId),

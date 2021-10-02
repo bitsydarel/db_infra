@@ -7,21 +7,21 @@ import 'package:db_infra/src/apis/apple/bundle_id_manager.dart';
 import 'package:db_infra/src/apis/apple/certificates_manager.dart';
 import 'package:db_infra/src/apis/apple/keychains_manager.dart';
 import 'package:db_infra/src/apis/apple/profiles_manager.dart';
-import 'package:db_infra/src/infra_encryptor.dart';
-import 'package:db_infra/src/infra_encryptor_type.dart';
-import 'package:db_infra/src/infra_logger.dart';
-import 'package:db_infra/src/infra_run_configuration.dart';
-import 'package:db_infra/src/infra_storage_type.dart';
+import 'package:db_infra/src/encryptor.dart';
+import 'package:db_infra/src/encryptor_type.dart';
+import 'package:db_infra/src/encryptors/encryptor_factory.dart';
+import 'package:db_infra/src/logger.dart';
+import 'package:db_infra/src/run_configuration.dart';
+import 'package:db_infra/src/storage_type.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/network_manager.dart';
 import 'package:db_infra/src/utils/types.dart';
-import 'package:db_infra/src/infra_encryptors/infra_encryptor_factory.dart';
 import 'package:io/io.dart';
 
 ///
 extension InfraConfigurationJsonExtension on JsonMap {
   ///
-  InfraStorageType getStorageType() {
+  StorageType getStorageType() {
     final Object? storageType = this['storageType'];
 
     return storageType is String
@@ -30,7 +30,7 @@ extension InfraConfigurationJsonExtension on JsonMap {
   }
 
   ///
-  InfraEncryptorType getEncryptorType() {
+  EncryptorType getEncryptorType() {
     final Object? encryptorType = this['encryptorType'];
 
     return encryptorType is String
@@ -42,9 +42,9 @@ extension InfraConfigurationJsonExtension on JsonMap {
   }
 
   ///
-  InfraEncryptor getEncryptor(
-    final InfraEncryptorType encryptorType,
-    final InfraLogger infraLogger,
+  Encryptor getEncryptor(
+    final EncryptorType encryptorType,
+    final Logger infraLogger,
     final Directory infraDirectory,
   ) {
     final Object? encryptorAsJson = this['encryptor'];
@@ -62,7 +62,7 @@ extension InfraConfigurationJsonExtension on JsonMap {
   }
 
   ///
-  Future<JsonMap> asEncrypted(final InfraEncryptor encryptor) async {
+  Future<JsonMap> asEncrypted(final Encryptor encryptor) async {
     final JsonMap encryptedMap = <String, Object?>{};
 
     for (final MapEntry<String, Object?> entry in entries) {
@@ -77,7 +77,7 @@ extension InfraConfigurationJsonExtension on JsonMap {
   }
 
   ///
-  Future<JsonMap> asDecrypted(final InfraEncryptor encryptor) async {
+  Future<JsonMap> asDecrypted(final Encryptor encryptor) async {
     final JsonMap decryptedMap = <String, Object?>{};
 
     for (final MapEntry<String, Object?> entry in entries) {
@@ -93,7 +93,7 @@ extension InfraConfigurationJsonExtension on JsonMap {
 }
 
 ///
-extension RunConfigurationExtensions on InfraRunConfiguration {
+extension RunConfigurationExtensions on RunConfiguration {
   ///
   ProfilesManager getProfilesManager() {
     return ProfilesManager(

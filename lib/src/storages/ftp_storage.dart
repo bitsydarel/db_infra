@@ -1,11 +1,10 @@
 import 'dart:io';
 
-import 'package:db_infra/src/infra_logger.dart';
-import 'package:db_infra/src/infra_storage.dart';
-import 'package:db_infra/src/utils/exceptions.dart';
+import 'package:db_infra/src/logger.dart';
+import 'package:db_infra/src/storage.dart';
 import 'package:db_infra/src/utils/types.dart';
 import 'package:ftpconnect/ftpconnect.dart';
-import 'package:io/io.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
 const String _usernameKey = 'ftpUsername';
@@ -15,7 +14,7 @@ const String _serverPortKey = 'ftpServerPort';
 const String _serverFolderNameKey = 'ftpFolderName';
 
 ///
-class InfraFtpStorage extends InfraStorage {
+class FtpStorage extends Storage {
   ///
   final String username;
 
@@ -31,21 +30,33 @@ class InfraFtpStorage extends InfraStorage {
   ///
   final String serverFolderName;
 
+  final FTPConnect _ftpConnection;
+
   ///
-  InfraFtpStorage({
+  FtpStorage({
     required this.username,
     required this.password,
     required this.serverUrl,
     required this.serverPort,
     required this.serverFolderName,
-    required InfraLogger logger,
+    required Logger logger,
     required Directory infraDirectory,
-  }) : super(logger, infraDirectory);
+    @visibleForTesting FTPConnect? ftpConnection,
+  })  : _ftpConnection = ftpConnection ??
+            FTPConnect(
+              serverUrl,
+              user: username,
+              pass: password,
+              port: serverPort,
+              debug: logger.enableLogging,
+              timeout: const Duration(minutes: 5).inSeconds,
+            ),
+        super(logger, infraDirectory);
 
   ///
-  factory InfraFtpStorage.fromJson(
+  factory FtpStorage.fromJson(
     JsonMap json,
-    InfraLogger logger,
+    Logger logger,
     Directory infraDirectory,
   ) {
     final Object? username = json[_usernameKey];
@@ -54,7 +65,7 @@ class InfraFtpStorage extends InfraStorage {
     final Object? serverPort = json[_serverPortKey];
     final Object? serverFolderName = json[_serverFolderNameKey];
 
-    return InfraFtpStorage(
+    return FtpStorage(
       username: username is String ? username : throw ArgumentError(username),
       password: password is String ? password : throw ArgumentError(password),
       serverUrl:
@@ -62,7 +73,7 @@ class InfraFtpStorage extends InfraStorage {
       serverFolderName: serverFolderName is String
           ? serverFolderName
           : throw ArgumentError(serverFolderName),
-      serverPort: serverPort is int
+      serverPort: serverPort is String
           ? int.parse(serverPort.toString())
           : throw ArgumentError(serverPort.toString()),
       logger: logger,
@@ -72,31 +83,30 @@ class InfraFtpStorage extends InfraStorage {
 
   @override
   Future<List<File>> loadFiles() async {
-    final FTPConnect ftpConnect = FTPConnect(
-      serverUrl,
-      user: username,
-      pass: password,
-      port: serverPort,
-      timeout: const Duration(minutes: 5).inSeconds,
-    );
-
-    await ftpConnect.connect();
+    await _ftpConnection.connect();
 
     final Directory localDirectory = Directory(
-      path.join(infraDirectory.path, serverFolderName),
+      path.join(infraDirectory.path, 'data'),
     );
 
     final File localZipFile = File(
       path.join(localDirectory.path, _getZipFileName()),
-    );
+    )..createSync(recursive: true);
 
-    await ftpConnect.downloadFileWithRetry(
+    final List<String> directoryPaths = path.split(serverFolderName);
+
+    for (final String directoryPath in directoryPaths) {
+      await _ftpConnection.createFolderIfNotExist(directoryPath);
+      await _ftpConnection.changeDirectory(directoryPath);
+    }
+
+    await _ftpConnection.downloadFileWithRetry(
       _getZipFileName(),
       localZipFile,
       pRetryCount: 3,
     );
 
-    await ftpConnect.disconnect();
+    await _ftpConnection.disconnect();
 
     await FTPConnect.unZipFile(localZipFile, localDirectory.path);
 
@@ -110,14 +120,7 @@ class InfraFtpStorage extends InfraStorage {
 
   @override
   Future<void> saveFiles(List<File> files) async {
-    final FTPConnect ftpConnect = FTPConnect(
-      serverUrl,
-      user: username,
-      pass: password,
-      debug: logger.enableLogging,
-    );
-
-    await ftpConnect.connect();
+    await _ftpConnection.connect();
 
     final File zipFile = File(
       path.join(infraDirectory.path, _getZipFileName()),
@@ -132,30 +135,14 @@ class InfraFtpStorage extends InfraStorage {
       'Creating directory $serverFolderName on ftp server if not exist',
     );
 
-    // this also move to the specified directory.
-    await ftpConnect.createFolderIfNotExist(serverFolderName);
+    final List<String> directoryPaths = path.split(serverFolderName);
 
-    int retryCount = 0;
-
-    while (retryCount <= 3) {
-      try {
-        await ftpConnect.uploadFile(zipFile);
-        break;
-      } on SocketException catch (se) {
-        logger
-          ..logError(se.message)
-          ..logError('Failed to upload ${zipFile.path}')
-          ..logError('Retry count $retryCount');
-        retryCount++;
-
-        if (retryCount == 3) {
-          throw UnrecoverableException(
-            se.osError.toString(),
-            ExitCode.tempFail.code,
-          );
-        }
-      }
+    for (final String directoryPath in directoryPaths) {
+      await _ftpConnection.createFolderIfNotExist(directoryPath);
+      await _ftpConnection.changeDirectory(directoryPath);
     }
+
+    _ftpConnection.uploadFileWithRetry(zipFile, pRetryCount: 3);
 
     logger.logSuccess('File uploads completed.');
 
@@ -173,5 +160,5 @@ class InfraFtpStorage extends InfraStorage {
     };
   }
 
-  String _getZipFileName() => '$serverFolderName.zip';
+  String _getZipFileName() => 'data.zip';
 }

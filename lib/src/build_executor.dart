@@ -1,19 +1,19 @@
 import 'dart:io';
 
-import 'package:db_infra/src/infra_configurations/infra_configuration.dart';
+import 'package:db_infra/src/configurations/infra_build_configuration.dart';
 import 'package:meta/meta.dart';
 
 ///
-abstract class InfraBuildExecutor {
+abstract class BuildExecutor {
   ///
   @protected
-  final InfraConfiguration configuration;
+  final InfraBuildConfiguration configuration;
 
   ///
   final Directory projectDirectory;
 
   ///
-  const InfraBuildExecutor({
+  const BuildExecutor({
     required this.projectDirectory,
     required this.configuration,
   });

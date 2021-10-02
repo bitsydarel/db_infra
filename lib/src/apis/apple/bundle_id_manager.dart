@@ -1,6 +1,6 @@
-import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/apis/apple/api/appstoreconnectapi_bundle_id.dart';
 import 'package:db_infra/src/apis/apple/bundle_id.dart';
+import 'package:db_infra/src/shell_runner.dart';
 
 ///
 class BundleIdManager {

@@ -84,3 +84,12 @@ const String infraFtpPortArg = 'ftp-port';
 
 /// Infrastructure ftp folder name.
 const String infraFtpFolderNameArg = 'ftp-folder-name';
+
+/// Infrastructure verbose logging.
+const String infraVerboseLoggingArg = 'verbose';
+
+/// Infrastructure build distributor type argument.
+const String infraBuildDistributorTypeArg = 'build-distributor';
+
+/// Infrastructure output directory.
+const String infraBuildOutputDirectoryArg = 'build-output-dir';

@@ -7,7 +7,7 @@ import 'package:db_infra/src/apis/apple/bundle_id.dart';
 import 'package:db_infra/src/apis/apple/certificate.dart';
 import 'package:db_infra/src/apis/apple/device.dart';
 import 'package:db_infra/src/apis/apple/profile.dart';
-import 'package:db_infra/src/infra_run_configuration.dart';
+import 'package:db_infra/src/run_configuration.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/types.dart';
 import 'package:http/http.dart';
@@ -18,7 +18,7 @@ class AppStoreConnectApiProfiles extends AppStoreConnectApi<Profile> {
   ///
   AppStoreConnectApiProfiles({
     required Client httpClient,
-    required InfraRunConfiguration configuration,
+    required RunConfiguration configuration,
   }) : super(httpClient: httpClient, configuration: configuration);
 
   ///

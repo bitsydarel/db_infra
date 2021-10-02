@@ -1,17 +1,26 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:db_infra/src/infra_configurations/infra_setup_configuration.dart';
-import 'package:db_infra/src/infra_encryptor.dart';
-import 'package:db_infra/src/infra_encryptor_type.dart';
-import 'package:db_infra/src/infra_encryptors/infra_base64_encryptor.dart';
-import 'package:db_infra/src/infra_logger.dart';
-import 'package:db_infra/src/infra_storage.dart';
-import 'package:db_infra/src/infra_storage_type.dart';
+import 'package:db_infra/src/build_distributor.dart';
+import 'package:db_infra/src/build_distributor_type.dart';
+import 'package:db_infra/src/build_distributors/build_distributor_factory.dart';
+import 'package:db_infra/src/build_output_type.dart';
+import 'package:db_infra/src/configurations/infra_build_configuration.dart';
+import 'package:db_infra/src/configurations/infra_setup_configuration.dart';
+import 'package:db_infra/src/encryptor.dart';
+import 'package:db_infra/src/encryptor_type.dart';
+import 'package:db_infra/src/encryptors/base64_encryptor.dart';
+import 'package:db_infra/src/logger.dart';
+import 'package:db_infra/src/storage.dart';
+import 'package:db_infra/src/storage_type.dart';
+import 'package:db_infra/src/storages/storage_factory.dart';
 import 'package:db_infra/src/utils/constants.dart';
+import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/file_utils.dart';
-import 'package:db_infra/src/infra_storages/infra_storage_factory.dart';
-import 'package:db_infra/src/infra_build_output_type.dart';
+import 'package:db_infra/src/utils/infra_extensions.dart';
+import 'package:db_infra/src/utils/types.dart';
+import 'package:io/io.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
@@ -25,11 +34,7 @@ extension ArgResultsExtension on ArgResults {
 
   ///
   Directory getProjectDirectory() {
-    if (rest.length != 1) {
-      throw const FormatException('invalid project dir path');
-    }
-
-    final Directory projectDir = _getResolvedDirectory(rest[0]);
+    final Directory projectDir = _getResolvedDirectory(rest.last);
 
     if (!projectDir.existsSync()) {
       throw const FormatException('specified project dir does not exist');
@@ -73,27 +78,11 @@ extension ArgResultsExtension on ArgResults {
     final File iosAppStoreConnectKeyPath =
         parseIosAppStoreConnectKeyPath(iOSAppId!);
 
-    final String? iosCSRPath = parseOptionalCertificate(
-      iosCertificateSigningRequestPathArg,
-      iosCertificateSigningRequestBase64Arg,
-      '$iOSAppId-csr',
-    );
-
     final String? iosCSREmail =
         parseOptionalString(iosCertificateSigningRequestEmailArg);
 
     final String? iosCSRName =
         parseOptionalString(iosCertificateSigningRequestNameArg);
-
-    if (iosCSRPath == null && iosCSREmail == null && iosCSRName == null) {
-      throw const FormatException(
-        'No certificate signing request found'
-        '\nSpecify $iosCertificateSigningRequestPathArg or '
-        '$iosCertificateSigningRequestBase64Arg or '
-        '($iosCertificateSigningRequestEmailArg with '
-        '$iosCertificateSigningRequestNameArg together)',
-      );
-    }
 
     if ((iosCSREmail == null && iosCSRName != null) ||
         (iosCSRName == null && iosCSREmail != null)) {
@@ -109,15 +98,25 @@ extension ArgResultsExtension on ArgResults {
       '$iOSAppId-csr-private-key',
     );
 
-    if (iosCSRPath == null && iosCSRPrivateKeyPath != null) {
+    if (iosCSRPrivateKeyPath == null &&
+        iosCSREmail == null &&
+        iosCSRName == null) {
       throw const FormatException(
-        'CSR private-key specified but CSR not specified\nSpecify '
-        '($iosCertificateSigningRequestPathArg or '
-        '$iosCertificateSigningRequestBase64Arg) with '
+        'CSR private-key must be specified\nSpecify '
         '($iosCertificateSigningRequestPrivateKeyPathArg or '
-        '$iosCertificateSigningRequestPrivateKeyBase64Arg)',
+        '$iosCertificateSigningRequestPrivateKeyBase64Arg) '
+        'to use a existing certificates.'
+        '\nSpecify ($iosCertificateSigningRequestEmailArg and '
+        '$iosCertificateSigningRequestNameArg) '
+        'to create new one CSR and certificates',
       );
     }
+
+    final String? iosCSRPath = parseOptionalCertificate(
+      iosCertificateSigningRequestPathArg,
+      iosCertificateSigningRequestBase64Arg,
+      '$iOSAppId-csr',
+    );
 
     final String? iosProvisionProfile =
         parseOptionalString(iosDistributionProvisionProfileUUIDArg);
@@ -142,17 +141,17 @@ extension ArgResultsExtension on ArgResults {
       );
     }
 
-    final InfraEncryptorType infraEncryptorType = getInfraEncryptorType();
+    final EncryptorType infraEncryptorType = getInfraEncryptorType();
 
-    final InfraEncryptor infraEncryptor =
+    final Encryptor infraEncryptor =
         getInfraEncryptor(infraEncryptorType, infraDirectory);
 
-    final InfraStorageType infraStorageType = getInfraStorageType();
+    final StorageType infraStorageType = getInfraStorageType();
 
-    final InfraStorage infraStorage = getInfraStorage(
+    final Storage infraStorage = getInfraStorage(
       infraStorageType,
       infraEncryptor,
-      const InfraLogger(enableLogging: true),
+      const Logger(enableLogging: true),
       infraDirectory,
     );
 
@@ -263,37 +262,42 @@ extension ArgResultsExtension on ArgResults {
   }
 
   ///
-  InfraEncryptorType getInfraEncryptorType() {
+  bool isLoggingEnabled() {
+    return wasParsed(infraVerboseLoggingArg);
+  }
+
+  ///
+  EncryptorType getInfraEncryptorType() {
     final String infraEncryptorType = parseString(infraEncryptorTypeArg);
 
     return infraEncryptorType.asEncryptorType();
   }
 
   ///
-  InfraEncryptor getInfraEncryptor(
-    final InfraEncryptorType infraEncryptorType,
+  Encryptor getInfraEncryptor(
+    final EncryptorType infraEncryptorType,
     final Directory infraDirectory,
   ) {
     switch (infraEncryptorType) {
-      case InfraEncryptorType.base64:
-        return InfraBase64Encryptor(infraDirectory);
+      case EncryptorType.base64:
+        return Base64Encryptor(infraDirectory);
       default:
         throw UnsupportedError('${infraEncryptorType.name} is unsupported');
     }
   }
 
   ///
-  InfraStorageType getInfraStorageType() {
+  StorageType getInfraStorageType() {
     final String infraStorageType = parseString(infraStorageTypeArg);
 
     return infraStorageType.asStorageType();
   }
 
   ///
-  InfraStorage getInfraStorage(
-    final InfraStorageType infraStorageType,
-    final InfraEncryptor infraEncryptor,
-    final InfraLogger logger,
+  Storage getInfraStorage(
+    final StorageType infraStorageType,
+    final Encryptor infraEncryptor,
+    final Logger logger,
     final Directory infraDirectory,
   ) {
     final String? infraDiskStorageLocation =
@@ -318,6 +322,68 @@ extension ArgResultsExtension on ArgResults {
           : null,
     );
   }
+
+  /// Get the build distributor
+  BuildDistributorType getBuildDistributorType() {
+    final String buildDistributorType =
+        parseString(infraBuildDistributorTypeArg);
+
+    return buildDistributorType.asBuildDistributorType();
+  }
+
+  ///
+  BuildDistributor getBuildDistributor(
+    final Logger logger,
+    final InfraBuildConfiguration configuration,
+    final BuildDistributorType buildDistributorType,
+  ) {
+    final String? outputDirectoryPath =
+        parseOptionalString(infraBuildOutputDirectoryArg);
+
+    return buildDistributorType.toDistributor(
+      infraLogger: logger,
+      configuration: configuration,
+      outputDirectoryPath: outputDirectoryPath,
+    );
+  }
+}
+
+/// Load the infrastructure configuration.
+Future<InfraBuildConfiguration> loadConfiguration(
+  final File configuration,
+  final Directory infraDirectory, {
+  required final bool enableLogging,
+}) async {
+  final String fileContent = configuration.readAsStringSync();
+
+  final Object? rawJson = jsonDecode(fileContent);
+
+  if (rawJson is JsonMap) {
+    final EncryptorType infraEncryptorType = rawJson.getEncryptorType();
+
+    final Logger logger = Logger(enableLogging: enableLogging);
+
+    final Encryptor infraEncryptor =
+        rawJson.getEncryptor(infraEncryptorType, logger, infraDirectory);
+
+    final StorageType infraStorageType = rawJson.getStorageType();
+
+    if (rawJson is JsonMap) {
+      return InfraBuildConfiguration.fromJson(
+        json: rawJson,
+        infraEncryptorType: infraEncryptorType,
+        infraEncryptor: infraEncryptor,
+        infraStorageType: infraStorageType,
+        logger: const Logger(enableLogging: true),
+        infraDir: infraDirectory,
+      );
+    }
+  }
+
+  throw UnrecoverableException(
+    "Can't load infra configuration with json\n$fileContent",
+    ExitCode.config.code,
+  );
 }
 
 /// Get the project [Directory] with a full path.

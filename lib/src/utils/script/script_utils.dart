@@ -2,10 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/args.dart';
-import 'package:db_infra/db_infra.dart';
-import 'package:db_infra/src/infra_build_output_type.dart';
-import 'package:db_infra/src/infra_encryptor_type.dart';
-import 'package:db_infra/src/infra_storage_type.dart';
+import 'package:db_infra/src/build_distributor_type.dart';
+import 'package:db_infra/src/build_output_type.dart';
+import 'package:db_infra/src/encryptor_type.dart';
+import 'package:db_infra/src/storage_type.dart';
 import 'package:db_infra/src/utils/constants.dart';
 import 'package:db_infra/src/utils/types.dart';
 import 'package:io/ansi.dart';
@@ -91,14 +91,14 @@ final ArgParser argumentParser = ArgParser()
   ..addOption(
     infraStorageTypeArg,
     help: 'Specify the infrastructure storage type',
-    allowed: InfraStorageType.values.map(enumName),
-    defaultsTo: enumName(InfraStorageType.disk),
+    allowed: StorageType.values.map(enumName),
+    defaultsTo: enumName(StorageType.disk),
   )
   ..addOption(
     infraEncryptorTypeArg,
     help: 'Specify the infrastructure encryptor type',
-    allowed: InfraEncryptorType.values.map(enumName),
-    defaultsTo: InfraEncryptorType.base64.name,
+    allowed: EncryptorType.values.map(enumName),
+    defaultsTo: EncryptorType.base64.name,
   )
   ..addOption(
     infraDiskStorageLocationArg,
@@ -108,14 +108,14 @@ final ArgParser argumentParser = ArgParser()
   ..addOption(
     infraIosBuildOutputTypeArg,
     help: 'Specify the infrastructure ios build output type',
-    allowed: InfraIosBuildOutputType.values.map(enumName),
-    defaultsTo: InfraIosBuildOutputType.ipa.name,
+    allowed: IosBuildOutputType.values.map(enumName),
+    defaultsTo: IosBuildOutputType.ipa.name,
   )
   ..addOption(
     infraAndroidBuildOutputTypeArg,
     help: 'Specify the infrastructure android build output type',
-    allowed: InfraAndroidBuildOutputType.values.map(enumName),
-    defaultsTo: InfraAndroidBuildOutputType.apk.name,
+    allowed: AndroidBuildOutputType.values.map(enumName),
+    defaultsTo: AndroidBuildOutputType.apk.name,
   )
   ..addOption(
     infraFtpUsernameArg,
@@ -136,7 +136,22 @@ final ArgParser argumentParser = ArgParser()
   )
   ..addOption(
     infraFtpFolderNameArg,
-    help: 'Specify the infrastructure ftp storage folder name',
+    help: 'Specify the infrastructure ftp storage folder name.',
+  )
+  ..addOption(
+    infraBuildDistributorTypeArg,
+    help: 'Specify the infrastructure build distributor type.',
+    allowed: BuildDistributorType.values.map(enumName),
+    defaultsTo: BuildDistributorType.directory.name,
+  )
+  ..addOption(
+    infraBuildOutputDirectoryArg,
+    help: 'Specify the output directory.',
+  )
+  ..addFlag(
+    infraVerboseLoggingArg,
+    defaultsTo: true,
+    help: 'Enable verbosity in the execution of the script.',
   )
   ..addFlag(helpArgument, help: 'Print help message.');
 

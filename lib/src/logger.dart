@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:io/ansi.dart';
 
 /// Infrastructure logger.
-class InfraLogger {
+class Logger {
   /// Enable logging.
   final bool enableLogging;
 
-  /// Create an [InfraLogger].
-  const InfraLogger({this.enableLogging = false});
+  /// Create an [Logger].
+  const Logger({this.enableLogging = false});
 
   /// Log a success action message.
   void logSuccess(String message) {

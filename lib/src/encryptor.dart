@@ -3,12 +3,12 @@ import 'dart:io';
 import 'package:db_infra/src/utils/types.dart';
 
 /// Infrastructure file encryptor.
-abstract class InfraEncryptor {
+abstract class Encryptor {
   /// The infrastructure directory.
   final Directory infraDirectory;
 
   /// A const constructor to allow child to define their const constructor.
-  const InfraEncryptor(this.infraDirectory);
+  const Encryptor(this.infraDirectory);
 
   /// Encrypt [files].
   ///

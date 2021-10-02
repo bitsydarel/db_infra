@@ -1,10 +1,10 @@
 import 'dart:io';
 
-import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/apis/apple/api/appstoreconnectapi_certificates.dart';
 import 'package:db_infra/src/apis/apple/certificate.dart';
 import 'package:db_infra/src/apis/apple/certificate_signing_request.dart';
 import 'package:db_infra/src/apis/apple/keychains_manager.dart';
+import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/file_utils.dart';
 import 'package:http/http.dart';
@@ -305,70 +305,25 @@ class CertificatesManager {
 
   ///
   CertificateSigningRequest createCertificateSigningRequest(
-    final String appId,
-    final String csrEmail,
-    final String csrName,
-  ) {
+    final String appId, [
+    final String? csrEmail,
+    final String? csrName,
+    final File? privateKey,
+  ]) {
     final String privateKeyFileName = '$appId-private.pem';
     final String publicKeyFileName = '$appId-public.pem';
     final String csrKeyFileName = '$appId.certSigningRequest';
 
-    final ShellOutput rsaOutput = runner.execute(
-      'openssl',
-      <String>['genrsa', '-out', privateKeyFileName, '2048'],
+    _getOrCreatePrivateKey(privateKey, privateKeyFileName);
+
+    _createCsrKey(
+      privateKeyFileName: privateKeyFileName,
+      csrKeyFileName: csrKeyFileName,
+      csrEmail: csrEmail,
+      csrName: csrName,
     );
 
-    if (rsaOutput.stderr.isNotEmpty &&
-        !rsaOutput.stderr.contains('Generating RSA private key')) {
-      throw UnrecoverableException(rsaOutput.stderr, ExitCode.tempFail.code);
-    }
-
-    stdout.writeln('Generated Private Key $privateKeyFileName');
-
-    final ShellOutput publicRsaOutput = runner.execute(
-      'openssl',
-      <String>[
-        'rsa',
-        '-in',
-        privateKeyFileName,
-        '-outform',
-        'PEM',
-        '-pubout',
-        '-out',
-        publicKeyFileName,
-      ],
-    );
-
-    if (publicRsaOutput.stderr.isNotEmpty &&
-        !publicRsaOutput.stderr.contains('writing RSA key')) {
-      throw UnrecoverableException(rsaOutput.stderr, ExitCode.tempFail.code);
-    }
-
-    stdout.writeln(green.wrap('Generated Public Key $publicKeyFileName'));
-
-    final String subject = '/emailAddress=$csrEmail/CN=$csrName';
-
-    final ShellOutput csrOutput = runner.execute(
-      'openssl',
-      <String>[
-        'req',
-        '-new',
-        '-key',
-        privateKeyFileName,
-        '-out',
-        csrKeyFileName,
-        '-subj',
-        subject,
-      ],
-    );
-
-    if (csrOutput.stderr.isNotEmpty) {
-      throw UnrecoverableException(csrOutput.stderr, ExitCode.tempFail.code);
-    }
-
-    stdout.writeln(
-      green.wrap('Generated Certificate signing request $csrKeyFileName'),
-    );
+    _createPublicRsaKey(privateKeyFileName, publicKeyFileName);
 
     final File csrFile = File(csrKeyFileName);
     final File privateKeyFile = File(privateKeyFileName);
@@ -387,6 +342,123 @@ class CertificatesManager {
       request: csrFile,
       privateKey: privateKeyFile,
       publicKey: publicKeyFile,
+    );
+  }
+
+  void _getOrCreatePrivateKey(File? privateKey, String privateKeyFileName) {
+    if (privateKey != null && privateKey.existsSync()) {
+      stdout.writeln(
+        blue.wrap(
+          'Reusing CSR Private Key $privateKeyFileName.',
+        ),
+      );
+
+      File(privateKeyFileName).writeAsBytesSync(
+        privateKey.readAsBytesSync(),
+        mode: FileMode.writeOnly,
+        flush: true,
+      );
+    } else {
+      stdout.writeln(
+        blue.wrap(
+          'Creating CSR Private Key $privateKeyFileName...',
+        ),
+      );
+
+      final ShellOutput rsaOutput = runner.execute(
+        'openssl',
+        <String>['genrsa', '-out', privateKeyFileName, '2048'],
+      );
+
+      if (rsaOutput.stderr.isNotEmpty &&
+          !rsaOutput.stderr.contains('Generating RSA private key')) {
+        throw UnrecoverableException(rsaOutput.stderr, ExitCode.tempFail.code);
+      }
+
+      stdout.writeln(
+        green.wrap(
+          'Created CSR Private Key $privateKeyFileName.',
+        ),
+      );
+    }
+  }
+
+  void _createCsrKey({
+    required String privateKeyFileName,
+    required String csrKeyFileName,
+    String? csrEmail,
+    String? csrName,
+  }) {
+    stdout.writeln(
+      blue.wrap(
+        'Creating CSR $csrKeyFileName from Private Key $privateKeyFileName...',
+      ),
+    );
+    final List<String> arguments = <String>[
+      'req',
+      '-new',
+      '-key',
+      privateKeyFileName,
+      '-out',
+      csrKeyFileName,
+    ];
+
+    final String subject;
+
+    if (csrEmail != null && csrName != null) {
+      subject = '/emailAddress=$csrEmail/CN=$csrName';
+    } else {
+      subject = '/';
+    }
+
+    arguments.addAll(<String>['-subj', subject]);
+
+    final ShellOutput csrOutput = runner.execute('openssl', arguments);
+
+    if (csrOutput.stderr.isNotEmpty) {
+      throw UnrecoverableException(csrOutput.stderr, ExitCode.tempFail.code);
+    }
+
+    stdout.writeln(
+      green.wrap('Certificate signing request $csrKeyFileName created.'),
+    );
+  }
+
+  void _createPublicRsaKey(
+    String privateKeyFileName,
+    String publicKeyFileName,
+  ) {
+    stdout.writeln(
+      blue.wrap(
+        'Creating Public Key from Private Key $privateKeyFileName.',
+      ),
+    );
+    final ShellOutput publicRsaOutput = runner.execute(
+      'openssl',
+      <String>[
+        'rsa',
+        '-in',
+        privateKeyFileName,
+        '-outform',
+        'PEM',
+        '-pubout',
+        '-out',
+        publicKeyFileName,
+      ],
+    );
+
+    if (publicRsaOutput.stderr.isNotEmpty &&
+        !publicRsaOutput.stderr.contains('writing RSA key')) {
+      throw UnrecoverableException(
+        publicRsaOutput.stderr,
+        ExitCode.tempFail.code,
+      );
+    }
+
+    stdout.writeln(
+      green.wrap(
+        'Created Public Key $publicKeyFileName.',
+      ),
     );
   }
 }

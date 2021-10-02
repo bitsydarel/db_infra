@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:db_infra/src/infra_logger.dart';
-import 'package:db_infra/src/infra_storage.dart';
+import 'package:db_infra/src/logger.dart';
+import 'package:db_infra/src/storage.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/file_utils.dart';
 import 'package:db_infra/src/utils/types.dart';
@@ -10,21 +10,21 @@ import 'package:io/io.dart';
 const String _storageDirectoryKey = 'storageDirectory';
 
 ///
-class InfraDiskStorage extends InfraStorage {
+class DiskStorage extends Storage {
   ///
   final Directory storageDirectory;
 
   ///
-  const InfraDiskStorage({
+  const DiskStorage({
     required this.storageDirectory,
-    required InfraLogger logger,
+    required Logger logger,
     required Directory infraDirectory,
   }) : super(logger, infraDirectory);
 
   /// Infrastructure disk storage from json.
-  factory InfraDiskStorage.fromJson(
+  factory DiskStorage.fromJson(
     JsonMap json,
-    InfraLogger logger,
+    Logger logger,
     Directory infraDirectory,
   ) {
     final Object? storageDirectoryParam = json[_storageDirectoryKey];
@@ -42,7 +42,7 @@ class InfraDiskStorage extends InfraStorage {
       );
     }
 
-    return InfraDiskStorage(
+    return DiskStorage(
       storageDirectory: storageDirectory,
       logger: logger,
       infraDirectory: infraDirectory,

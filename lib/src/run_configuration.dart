@@ -1,13 +1,13 @@
 import 'dart:io';
 
-import 'package:db_infra/src/infra_build_output_type.dart';
-import 'package:db_infra/src/infra_encryptor.dart';
-import 'package:db_infra/src/infra_encryptor_type.dart';
-import 'package:db_infra/src/infra_storage.dart';
-import 'package:db_infra/src/infra_storage_type.dart';
+import 'package:db_infra/src/build_output_type.dart';
+import 'package:db_infra/src/encryptor.dart';
+import 'package:db_infra/src/encryptor_type.dart';
+import 'package:db_infra/src/storage.dart';
+import 'package:db_infra/src/storage_type.dart';
 
 ///
-abstract class InfraRunConfiguration {
+abstract class RunConfiguration {
   /// Android application id.
   final String androidAppId;
 
@@ -24,25 +24,25 @@ abstract class InfraRunConfiguration {
   final File iosAppStoreConnectKey;
 
   ///
-  final InfraStorage storage;
+  final Storage storage;
 
   ///
-  final InfraEncryptor encryptor;
+  final Encryptor encryptor;
 
   ///
-  final InfraStorageType storageType;
+  final StorageType storageType;
 
   ///
-  final InfraEncryptorType encryptorType;
+  final EncryptorType encryptorType;
 
   ///
-  final InfraIosBuildOutputType iosBuildOutputType;
+  final IosBuildOutputType iosBuildOutputType;
 
   ///
-  final InfraAndroidBuildOutputType androidBuildOutputType;
+  final AndroidBuildOutputType androidBuildOutputType;
 
   ///
-  const InfraRunConfiguration({
+  const RunConfiguration({
     required this.androidAppId,
     required this.iosAppId,
     required this.iosAppStoreConnectKeyId,

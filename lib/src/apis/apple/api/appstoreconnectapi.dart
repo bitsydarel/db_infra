@@ -1,10 +1,10 @@
 import 'dart:io';
 
-import 'package:db_infra/src/infra_run_configuration.dart';
+import 'package:db_infra/src/run_configuration.dart';
+import 'package:db_infra/src/utils/types.dart';
 import 'package:http/http.dart';
 import 'package:jose/jose.dart';
 import 'package:meta/meta.dart';
-import 'package:db_infra/src/utils/types.dart';
 
 const Duration _defaultJwtTokenExp = Duration(minutes: 19);
 
@@ -29,7 +29,7 @@ abstract class AppStoreConnectApi<R> {
 
   ///
   @protected
-  final InfraRunConfiguration configuration;
+  final RunConfiguration configuration;
 
   ///
   String? _token;
@@ -93,13 +93,13 @@ abstract class AppStoreConnectApi<R> {
 
 ///
 extension _JWTExtension on JsonWebSignatureBuilder {
-  void addHeader(final InfraRunConfiguration configuration) {
+  void addHeader(final RunConfiguration configuration) {
     setProtectedHeader('typ', 'JWT');
 
     setProtectedHeader('kid', configuration.iosAppStoreConnectKeyId);
   }
 
-  void addPayload(final InfraRunConfiguration configuration) {
+  void addPayload(final RunConfiguration configuration) {
     final String issuer = configuration.iosAppStoreConnectKeyIssuer;
 
     final double inSeconds =
@@ -116,7 +116,7 @@ extension _JWTExtension on JsonWebSignatureBuilder {
     jsonContent = claims.toJson();
   }
 
-  void sign(final InfraRunConfiguration configuration) {
+  void sign(final RunConfiguration configuration) {
     final File privateKey = configuration.iosAppStoreConnectKey;
 
     if (!privateKey.existsSync()) {

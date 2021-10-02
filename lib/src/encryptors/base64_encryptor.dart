@@ -2,16 +2,16 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:db_infra/src/infra_encryptor.dart';
+import 'package:db_infra/src/encryptor.dart';
 import 'package:db_infra/src/utils/types.dart';
 import 'package:path/path.dart' as path;
 
 const String _base64FileExtension = '.encrypted64';
 
 /// Infrastructure Base64 encryptor.
-class InfraBase64Encryptor extends InfraEncryptor {
+class Base64Encryptor extends Encryptor {
   ///
-  const InfraBase64Encryptor(Directory infraDir) : super(infraDir);
+  const Base64Encryptor(Directory infraDir) : super(infraDir);
 
   @override
   Future<List<File>> encryptFiles(List<File> files) async {

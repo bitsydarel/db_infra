@@ -28,7 +28,7 @@ packages:
       name: args
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.2.0"
+    version: "2.3.0"
   asn1lib:
     dependency: transitive
     description:
@@ -84,7 +84,7 @@ packages:
       name: build_runner
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "2.1.1"
+    version: "2.1.2"
   build_runner_core:
     dependency: transitive
     description:
@@ -469,7 +469,7 @@ packages:
       name: test
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.17.11"
+    version: "1.17.12"
   test_api:
     dependency: transitive
     description:
@@ -483,7 +483,7 @@ packages:
       name: test_core
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "0.4.1"
+    version: "0.4.2"
   timing:
     dependency: transitive
     description:
@@ -541,4 +541,4 @@ packages:
     source: hosted
     version: "3.1.0"
 sdks:
-  dart: ">=2.13.4 <3.0.0"
+  dart: ">=2.14.0 <3.0.0"

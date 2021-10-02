@@ -1,19 +1,19 @@
 import 'dart:io';
 
-import 'package:db_infra/src/utils/types.dart';
-import 'package:glob/list_local_fs.dart';
-import 'package:glob/glob.dart';
 import 'package:collection/collection.dart';
+import 'package:db_infra/src/utils/types.dart';
+import 'package:glob/glob.dart';
+import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as path;
 
 ///
-enum InfraIosBuildOutputType {
+enum IosBuildOutputType {
   ///
   ipa,
 }
 
 ///
-enum InfraAndroidBuildOutputType {
+enum AndroidBuildOutputType {
   ///
   apk,
 
@@ -22,7 +22,7 @@ enum InfraAndroidBuildOutputType {
 }
 
 ///
-extension InfraIosBuildOutputTypeExtension on InfraIosBuildOutputType {
+extension IosBuildOutputTypeExtension on IosBuildOutputType {
   ///
   String get name => enumName(this);
 
@@ -32,7 +32,7 @@ extension InfraIosBuildOutputTypeExtension on InfraIosBuildOutputType {
     final Glob releaseFileFinder;
 
     switch (this) {
-      case InfraIosBuildOutputType.ipa:
+      case IosBuildOutputType.ipa:
         outputDirectory = Directory(
           path.join(projectDirectory.path, 'build/ios/ipa'),
         );
@@ -45,7 +45,7 @@ extension InfraIosBuildOutputTypeExtension on InfraIosBuildOutputType {
 }
 
 ///
-extension InfraAndroidBuildOutputTypeExtension on InfraAndroidBuildOutputType {
+extension AndroidBuildOutputTypeExtension on AndroidBuildOutputType {
   ///
   String get name => enumName(this);
 
@@ -55,13 +55,13 @@ extension InfraAndroidBuildOutputTypeExtension on InfraAndroidBuildOutputType {
     final Glob releaseFileFinder;
 
     switch (this) {
-      case InfraAndroidBuildOutputType.apk:
+      case AndroidBuildOutputType.apk:
         outputDirectory = Directory(
           path.join(projectDirectory.path, 'build/app/outputs/flutter-apk'),
         );
         releaseFileFinder = Glob('**-release.apk');
         break;
-      case InfraAndroidBuildOutputType.appbundle:
+      case AndroidBuildOutputType.appbundle:
         outputDirectory = Directory(
           path.join(projectDirectory.path, 'build/app/outputs/bundle/release'),
         );
@@ -74,18 +74,18 @@ extension InfraAndroidBuildOutputTypeExtension on InfraAndroidBuildOutputType {
 }
 
 ///
-extension StringInfraIosBuildOutputTypeExtension on String {
+extension StringIosBuildOutputTypeExtension on String {
   ///
-  InfraIosBuildOutputType asIosBuildOutputType() {
-    return InfraIosBuildOutputType.values.firstWhere(
-      (InfraIosBuildOutputType type) => enumName(type) == this,
+  IosBuildOutputType asIosBuildOutputType() {
+    return IosBuildOutputType.values.firstWhere(
+      (IosBuildOutputType type) => enumName(type) == this,
     );
   }
 
   ///
-  InfraAndroidBuildOutputType asAndroidBuildOutputType() {
-    return InfraAndroidBuildOutputType.values.firstWhere(
-      (InfraAndroidBuildOutputType type) => enumName(type) == this,
+  AndroidBuildOutputType asAndroidBuildOutputType() {
+    return AndroidBuildOutputType.values.firstWhere(
+      (AndroidBuildOutputType type) => enumName(type) == this,
     );
   }
 }

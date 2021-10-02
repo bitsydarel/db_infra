@@ -1,21 +1,21 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:db_infra/src/infra_run_configuration.dart';
-import 'package:io/io.dart';
-import 'package:http/http.dart';
+import 'package:db_infra/src/apis/apple/api/appstoreconnectapi.dart';
+import 'package:db_infra/src/apis/apple/api/certificates_dto.dart';
+import 'package:db_infra/src/apis/apple/certificate.dart';
+import 'package:db_infra/src/run_configuration.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/types.dart';
-import 'package:db_infra/src/apis/apple/certificate.dart';
-import 'package:db_infra/src/apis/apple/api/certificates_dto.dart';
-import 'package:db_infra/src/apis/apple/api/appstoreconnectapi.dart';
+import 'package:http/http.dart';
+import 'package:io/io.dart';
 
 ///
 class AppStoreConnectApiCertificates extends AppStoreConnectApi<Certificate> {
   ///
   AppStoreConnectApiCertificates({
     required Client httpClient,
-    required InfraRunConfiguration configuration,
+    required RunConfiguration configuration,
   }) : super(httpClient: httpClient, configuration: configuration);
 
   ///

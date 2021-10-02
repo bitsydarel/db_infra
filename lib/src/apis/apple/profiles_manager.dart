@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/apis/apple/api/appstoreconnectapi_profiles.dart';
 import 'package:db_infra/src/apis/apple/bundle_id.dart';
 import 'package:db_infra/src/apis/apple/certificate.dart';
 import 'package:db_infra/src/apis/apple/device.dart';
 import 'package:db_infra/src/apis/apple/profile.dart';
+import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:io/ansi.dart';
 import 'package:io/io.dart';

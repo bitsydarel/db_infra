@@ -1,8 +1,9 @@
 import 'dart:io';
 
-import 'package:db_infra/db_infra.dart';
 import 'package:args/args.dart';
-import 'package:db_infra/src/utils/exceptions.dart';
+import 'package:db_infra/db_infra.dart';
+import 'package:db_infra/src/build_distributor.dart';
+import 'package:db_infra/src/build_distributor_type.dart';
 import 'package:io/io.dart';
 
 Future<void> main(List<String> arguments) async {
@@ -43,7 +44,29 @@ Future<void> main(List<String> arguments) async {
 
       await dbInfra.setup(configuration);
     } else {
-      await dbInfra.build();
+      final File configurationFile = File(
+        '${projectDir.path}/$configFileName',
+      );
+
+      final InfraBuildConfiguration configuration = await loadConfiguration(
+        configurationFile,
+        infraDir,
+        enableLogging: argResult.isLoggingEnabled(),
+      );
+
+      final BuildDistributorType buildDistributorType =
+          argResult.getBuildDistributorType();
+
+      final BuildDistributor buildDistributor = argResult.getBuildDistributor(
+        configuration.storage.logger,
+        configuration,
+        buildDistributorType,
+      );
+
+      await dbInfra.build(
+        configuration: configuration,
+        buildDistributor: buildDistributor,
+      );
     }
 
     await dbInfra.cleanup();

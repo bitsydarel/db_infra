@@ -3,9 +3,9 @@ import 'package:db_infra/src/apis/apple/api/bundle_ids_dto.dart';
 import 'package:db_infra/src/apis/apple/api/certificates_dto.dart';
 import 'package:db_infra/src/apis/apple/profile.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
+import 'package:db_infra/src/utils/types.dart';
 import 'package:io/io.dart';
 import 'package:json_annotation/json_annotation.dart';
-import 'package:db_infra/src/utils/types.dart';
 
 part 'profiles_dto.g.dart';
 

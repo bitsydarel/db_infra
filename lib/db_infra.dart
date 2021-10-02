@@ -6,27 +6,26 @@ import 'dart:io';
 import 'package:db_infra/src/apis/apple/bundle_id_manager.dart';
 import 'package:db_infra/src/apis/apple/certificates_manager.dart';
 import 'package:db_infra/src/apis/apple/profiles_manager.dart';
-import 'package:db_infra/src/infra_configurations/infra_configuration.dart';
-import 'package:db_infra/src/infra_configurations/infra_setup_configuration.dart';
-import 'package:db_infra/src/infra_encryptor.dart';
-import 'package:db_infra/src/infra_encryptor_type.dart';
-import 'package:db_infra/src/infra_logger.dart';
-import 'package:db_infra/src/infra_setup_executors/infra_ios_setup_executor.dart';
-import 'package:db_infra/src/infra_software_builders/infra_flutter_ios_build_executor.dart';
-import 'package:db_infra/src/infra_storage_type.dart';
+import 'package:db_infra/src/build_distributor.dart';
+import 'package:db_infra/src/build_executors/flutter_ios_build_executor.dart';
+import 'package:db_infra/src/configurations/infra_build_configuration.dart';
+import 'package:db_infra/src/configurations/infra_setup_configuration.dart';
+import 'package:db_infra/src/setup_executors/ios_setup_executor.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/file_utils.dart';
 import 'package:db_infra/src/utils/infra_extensions.dart';
-import 'package:db_infra/src/utils/types.dart';
 import 'package:io/io.dart';
 import 'package:meta/meta.dart';
 
+export 'package:db_infra/src/configurations/infra_build_configuration.dart';
+export 'package:db_infra/src/configurations/infra_setup_configuration.dart';
+export 'package:db_infra/src/utils/constants.dart';
+export 'package:db_infra/src/utils/exceptions.dart';
 export 'package:db_infra/src/utils/script/script_extension.dart';
 export 'package:db_infra/src/utils/script/script_utils.dart';
-export 'package:db_infra/src/utils/constants.dart';
-export 'package:db_infra/src/infra_configurations/infra_setup_configuration.dart';
 
-const String _configFileName = 'infra_config.json';
+/// DB Infrastructure configuration file name.
+const String configFileName = 'infra_config.json';
 
 /// DB Infrastructure.
 class DBInfra {
@@ -48,7 +47,7 @@ class DBInfra {
 
     final BundleIdManager bundleIdManager = configuration.getBundleManager();
 
-    final InfraIosSetupExecutor iosSetupExecutor = InfraIosSetupExecutor(
+    final IosSetupExecutor iosSetupExecutor = IosSetupExecutor(
       configuration: configuration,
       infraDirectory: infraDirectory,
       profilesManager: profilesManager,
@@ -56,7 +55,7 @@ class DBInfra {
       bundleIdManager: bundleIdManager,
     );
 
-    final InfraConfiguration infraConfiguration =
+    final InfraBuildConfiguration infraConfiguration =
         await iosSetupExecutor.setupInfra();
 
     final List<File> filesToEncrypt = <File>[
@@ -72,7 +71,7 @@ class DBInfra {
     await infraConfiguration.storage.saveFiles(encryptedFiles);
 
     final File configurationFile = File(
-      '${projectDirectory.path}/$_configFileName',
+      '${projectDirectory.path}/$configFileName',
     );
 
     configuration.storage.logger.logInfo(
@@ -87,19 +86,33 @@ class DBInfra {
   }
 
   /// Build flutter android app.
-  Future<void> build({bool sign = true}) async {
-    final File configurationFile = File(
-      '${projectDirectory.path}/$_configFileName',
-    );
-
-    final InfraConfiguration configuration =
-        await loadConfiguration(configurationFile, infraDirectory);
-
+  Future<void> build({
+    required InfraBuildConfiguration configuration,
+    required BuildDistributor buildDistributor,
+    bool sign = true,
+  }) async {
     final ProfilesManager profilesManager = configuration.getProfilesManager();
 
     final CertificatesManager certificatesManager =
         configuration.getCertificatesManager();
 
+    await decryptInfraFiles(configuration);
+
+    final File iosFlutterOutput = await FlutterIosBuildExecutor(
+      projectDirectory: projectDirectory,
+      configuration: configuration,
+      profilesManager: profilesManager,
+      certificatesManager: certificatesManager,
+    ).build();
+
+    stdout.writeln('iOS Output: ${iosFlutterOutput.path}');
+
+    buildDistributor.distribute(iosFlutterOutput);
+  }
+
+  /// Decrypt infrastructure files.
+  @visibleForTesting
+  Future<void> decryptInfraFiles(InfraBuildConfiguration configuration) async {
     final List<File> storedFiles = await configuration.storage.loadFiles();
 
     final List<File> decryptedFiles =
@@ -108,60 +121,12 @@ class DBInfra {
     for (final File decryptedFile in decryptedFiles) {
       copyFile(infraDirectory, decryptedFile);
     }
-
-    final File iosFlutterOutput = await InfraFlutterIosBuildExecutor(
-      projectDirectory: projectDirectory,
-      configuration: configuration,
-      profilesManager: profilesManager,
-      certificatesManager: certificatesManager,
-    ).build();
-
-    stdout.writeln('iOS Output: ${iosFlutterOutput.path}');
-  }
-
-  /// Load the infrastructure configuration.
-  @visibleForTesting
-  Future<InfraConfiguration> loadConfiguration(
-    final File configuration,
-    final Directory infraDirectory, {
-    final bool enableLogging = false,
-  }) async {
-    final String fileContent = configuration.readAsStringSync();
-
-    final Object? rawJson = jsonDecode(fileContent);
-
-    if (rawJson is JsonMap) {
-      final InfraEncryptorType infraEncryptorType = rawJson.getEncryptorType();
-
-      final InfraLogger logger = InfraLogger(enableLogging: enableLogging);
-
-      final InfraEncryptor infraEncryptor =
-          rawJson.getEncryptor(infraEncryptorType, logger, infraDirectory);
-
-      final InfraStorageType infraStorageType = rawJson.getStorageType();
-
-      if (rawJson is JsonMap) {
-        return InfraConfiguration.fromJson(
-          json: rawJson,
-          infraEncryptorType: infraEncryptorType,
-          infraEncryptor: infraEncryptor,
-          infraStorageType: infraStorageType,
-          logger: const InfraLogger(enableLogging: true),
-          infraDir: infraDirectory,
-        );
-      }
-    }
-
-    throw UnrecoverableException(
-      "Can't load infra configuration with json\n$fileContent",
-      ExitCode.config.code,
-    );
   }
 
   /// Save the infrastructure configuration.
   @visibleForTesting
   Future<void> saveConfiguration(
-    InfraConfiguration configuration,
+    InfraBuildConfiguration configuration,
     File configurationFile,
   ) async {
     final Map<String, Object?> configAsJson = await configuration.toJson();
@@ -177,12 +142,12 @@ class DBInfra {
   /// Get the infrastructure configuration file.
   File getConfigurationFile() {
     final File configurationFile = File(
-      '${projectDirectory.path}/$_configFileName',
+      '${projectDirectory.path}/$configFileName',
     );
 
     if (!configurationFile.existsSync()) {
       throw UnrecoverableException(
-        '$_configFileName not found in project',
+        '$configFileName not found in project',
         ExitCode.config.code,
       );
     }

@@ -1,9 +1,5 @@
 import 'dart:io';
 
-import 'package:db_infra/src/infra_configurations/infra_configuration.dart';
-import 'package:db_infra/src/infra_configurations/infra_setup_configuration.dart';
-import 'package:db_infra/src/infra_setup_executor.dart';
-import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/apis/apple/bundle_id.dart';
 import 'package:db_infra/src/apis/apple/bundle_id_manager.dart';
 import 'package:db_infra/src/apis/apple/certificate.dart';
@@ -12,12 +8,16 @@ import 'package:db_infra/src/apis/apple/certificates_manager.dart';
 import 'package:db_infra/src/apis/apple/device.dart';
 import 'package:db_infra/src/apis/apple/profile.dart';
 import 'package:db_infra/src/apis/apple/profiles_manager.dart';
+import 'package:db_infra/src/configurations/infra_build_configuration.dart';
+import 'package:db_infra/src/configurations/infra_setup_configuration.dart';
+import 'package:db_infra/src/setup_executor.dart';
+import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:io/io.dart';
 import 'package:meta/meta.dart';
 
 ///
-class InfraIosSetupExecutor extends InfraSetupExecutor {
+class IosSetupExecutor extends SetupExecutor {
   ///
   final ProfilesManager profilesManager;
 
@@ -31,7 +31,7 @@ class InfraIosSetupExecutor extends InfraSetupExecutor {
   final ShellRunner runner;
 
   ///
-  const InfraIosSetupExecutor({
+  const IosSetupExecutor({
     required InfraSetupConfiguration configuration,
     required Directory infraDirectory,
     required this.profilesManager,
@@ -41,7 +41,7 @@ class InfraIosSetupExecutor extends InfraSetupExecutor {
   }) : super(configuration, infraDirectory);
 
   @override
-  Future<InfraConfiguration> setupInfra() async {
+  Future<InfraBuildConfiguration> setupInfra() async {
     final String appId = configuration.iosAppId;
 
     CertificateSigningRequest? csr = getCertificateSigningRequestFile();
@@ -214,22 +214,46 @@ class InfraIosSetupExecutor extends InfraSetupExecutor {
   @visibleForTesting
   CertificateSigningRequest? getCertificateSigningRequestFile() {
     final String? csrPath = configuration.iosCertificateSigningRequestPath;
+
     final String? csrPrivateKeyPath =
         configuration.iosCertificateSigningRequestPrivateKeyPath;
 
-    if (csrPath != null && csrPrivateKeyPath != null) {
-      final File csrFile = File(csrPath);
+    if (csrPrivateKeyPath != null) {
       final File csrPrivateKeyFile = File(csrPrivateKeyPath);
 
-      if (csrFile.existsSync() && csrPrivateKeyFile.existsSync()) {
-        return CertificateSigningRequest(
-          request: csrFile,
-          privateKey: csrPrivateKeyFile,
-        );
+      if (csrPrivateKeyFile.existsSync()) {
+        final File csrFile;
+
+        if (csrPath != null) {
+          csrFile = File(csrPath);
+
+          return CertificateSigningRequest(
+            request: csrFile,
+            privateKey: csrPrivateKeyFile,
+          );
+        } else {
+          return createCSRFromPrivateKey(csrPrivateKeyFile);
+        }
       }
     }
 
     return null;
+  }
+
+  ///
+  @visibleForTesting
+  CertificateSigningRequest createCSRFromPrivateKey(
+    File privateKey,
+  ) {
+    final String? csrName = configuration.iosCertificateSigningRequestName;
+    final String? csrEmail = configuration.iosCertificateSigningRequestEmail;
+
+    return certificatesManager.createCertificateSigningRequest(
+      configuration.iosAppId,
+      csrEmail,
+      csrName,
+      privateKey,
+    );
   }
 
   ///
@@ -249,12 +273,12 @@ class InfraIosSetupExecutor extends InfraSetupExecutor {
     return null;
   }
 
-  InfraConfiguration _createConfiguration(
+  InfraBuildConfiguration _createConfiguration(
     final CertificateSigningRequest csr,
     final _ProvisionProfileWithCertificateSha1 profileData,
     final File exportOptionsPlist,
   ) {
-    return InfraConfiguration(
+    return InfraBuildConfiguration(
       androidAppId: configuration.androidAppId,
       iosAppId: configuration.iosAppId,
       iosAppStoreConnectKeyId: configuration.iosAppStoreConnectKeyId,
