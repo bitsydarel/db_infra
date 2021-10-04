@@ -77,7 +77,6 @@ class IosSetupExecutor extends SetupExecutor {
       final InfraBuildConfiguration buildConfiguration =
           _createBuildConfiguration(csr, data, exportOptionsPlist);
 
-      profilesManager.deleteProvisionProfileLocally(data.profile);
       certificatesManager.cleanupLocally();
 
       return buildConfiguration;
@@ -211,8 +210,6 @@ class IosSetupExecutor extends SetupExecutor {
 
     final String? sha1 =
         certificatesManager.importCertificateLocally(certificate);
-
-    profilesManager.importProvisionProfileLocally(newProfile);
 
     return _ProvisionProfileWithCertificateSha1(newProfile, sha1);
   }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -26,17 +27,20 @@ void main(List<String> arguments) {
     ..addCommand(InfraSetupCommand())
     ..addCommand(InfraBuildCommand());
 
-  commandRunner.run(arguments).catchError((Object error, StackTrace history) {
-    stderr
-      ..writeln(error)
-      ..writeln(history);
+  runZonedGuarded<void>(
+    () => commandRunner.run(arguments),
+    (Object error, StackTrace history) {
+      stderr
+        ..writeln(error)
+        ..writeln(history);
 
-    if (error is UnrecoverableException) {
-      exit(error.exitCode);
-    } else if (error is Error) {
-      exit(ExitCode.osError.code);
-    } else if (error is Exception) {
-      exit(ExitCode.tempFail.code);
-    }
-  });
+      if (error is UnrecoverableException) {
+        exit(error.exitCode);
+      } else if (error is Error) {
+        exit(ExitCode.osError.code);
+      } else if (error is Exception) {
+        exit(ExitCode.tempFail.code);
+      }
+    },
+  );
 }
