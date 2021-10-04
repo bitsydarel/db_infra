@@ -4,11 +4,8 @@ import 'package:db_infra/src/utils/types.dart';
 
 /// Infrastructure file encryptor.
 abstract class Encryptor {
-  /// The infrastructure directory.
-  final Directory infraDirectory;
-
   /// A const constructor to allow child to define their const constructor.
-  const Encryptor(this.infraDirectory);
+  const Encryptor();
 
   /// Encrypt [files].
   ///

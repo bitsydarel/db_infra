@@ -11,7 +11,10 @@ const String _base64FileExtension = '.encrypted64';
 /// Infrastructure Base64 encryptor.
 class Base64Encryptor extends Encryptor {
   ///
-  const Base64Encryptor(Directory infraDir) : super(infraDir);
+  final Directory infraDirectory;
+
+  ///
+  const Base64Encryptor(this.infraDirectory);
 
   @override
   Future<List<File>> encryptFiles(List<File> files) async {

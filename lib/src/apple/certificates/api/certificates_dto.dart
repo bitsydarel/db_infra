@@ -1,4 +1,5 @@
-import 'package:db_infra/src/apis/apple/certificate.dart';
+import 'package:db_infra/src/apple/certificates/certificate.dart';
+import 'package:db_infra/src/apple/certificates/certificate_type.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'certificates_dto.g.dart';
@@ -152,7 +153,7 @@ class CertificateResponseData {
     return Certificate(
       id: id,
       name: attributes.name,
-      type: attributes.certificateType,
+      type: attributes.certificateType.fromKey(),
       expireAt: DateTime.parse(attributes.expirationDate),
       content: attributes.certificateContent,
       serialNumber: attributes.serialNumber,

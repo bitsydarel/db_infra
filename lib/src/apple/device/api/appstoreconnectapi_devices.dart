@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:db_infra/src/apis/apple/api/appstoreconnectapi.dart';
-import 'package:db_infra/src/apis/apple/api/device_dto.dart';
-import 'package:db_infra/src/apis/apple/device.dart';
+import 'package:db_infra/src/apple/appstoreconnectapi.dart';
+import 'package:db_infra/src/apple/device/api/device_dto.dart';
+import 'package:db_infra/src/apple/device/device.dart';
 import 'package:db_infra/src/run_configuration.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/types.dart';

@@ -1,13 +1,16 @@
 import 'dart:io';
 
-import 'package:db_infra/src/apis/apple/bundle_id.dart';
-import 'package:db_infra/src/apis/apple/bundle_id_manager.dart';
-import 'package:db_infra/src/apis/apple/certificate.dart';
-import 'package:db_infra/src/apis/apple/certificate_signing_request.dart';
-import 'package:db_infra/src/apis/apple/certificates_manager.dart';
-import 'package:db_infra/src/apis/apple/device.dart';
-import 'package:db_infra/src/apis/apple/profile.dart';
-import 'package:db_infra/src/apis/apple/profiles_manager.dart';
+import 'package:db_infra/src/apple/bundle_id/bundle_id.dart';
+import 'package:db_infra/src/apple/bundle_id/bundle_id_manager.dart';
+import 'package:db_infra/src/apple/certificates/certificate.dart';
+import 'package:db_infra/src/apple/certificates/certificate_signing_request.dart';
+import 'package:db_infra/src/apple/certificates/certificate_type.dart';
+import 'package:db_infra/src/apple/certificates/certificates_manager.dart';
+import 'package:db_infra/src/apple/device/device.dart';
+import 'package:db_infra/src/apple/device/device_manager.dart';
+import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
+import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.dart';
+import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/configurations/infra_build_configuration.dart';
 import 'package:db_infra/src/configurations/infra_setup_configuration.dart';
 import 'package:db_infra/src/setup_executor.dart';
@@ -19,13 +22,16 @@ import 'package:meta/meta.dart';
 ///
 class IosSetupExecutor extends SetupExecutor {
   ///
-  final ProfilesManager profilesManager;
+  final ProvisionProfileManager profilesManager;
 
   ///
   final CertificatesManager certificatesManager;
 
   ///
   final BundleIdManager bundleIdManager;
+
+  ///
+  final DeviceManager deviceManager;
 
   ///
   final ShellRunner runner;
@@ -37,6 +43,7 @@ class IosSetupExecutor extends SetupExecutor {
     required this.profilesManager,
     required this.certificatesManager,
     required this.bundleIdManager,
+    required this.deviceManager,
     this.runner = const ShellRunner(),
   }) : super(configuration, infraDirectory);
 
@@ -44,43 +51,36 @@ class IosSetupExecutor extends SetupExecutor {
   Future<InfraBuildConfiguration> setupInfra() async {
     final String appId = configuration.iosAppId;
 
+    _ProvisionProfileWithCertificateSha1? data;
+
     CertificateSigningRequest? csr = getCertificateSigningRequestFile();
+    final String? provisionProfileId =
+        configuration.iosProvisionProfileId?.trim();
 
-    if (csr != null) {
-      final String? provisionProfileId =
-          configuration.iosDistributionProvisionProfileUUID?.trim();
+    if (csr != null && provisionProfileId != null) {
+      data =
+          await getAndInstallProvisionProfile(appId, provisionProfileId, csr);
+    } else if (csr != null) {
+      data = await createAndInstallProvisionProfile(appId, csr);
+    } else {
+      csr = createCertificateSigningRequestFile();
 
-      final _ProvisionProfileWithCertificateSha1 data;
-
-      if (provisionProfileId != null) {
-        data =
-            await getAndInstallProvisionProfile(appId, provisionProfileId, csr);
-      } else {
+      if (csr != null) {
         data = await createAndInstallProvisionProfile(appId, csr);
       }
-
-      final File exportOptionsPlist = data.profile.generateExportOptionsPlist(
-        infraDirectory,
-        appId,
-        certificateSha1: data.sha1,
-      );
-
-      return _createConfiguration(csr, data, exportOptionsPlist);
     }
 
-    csr = createCertificateSigningRequestFile();
+    if (csr != null && data != null) {
+      final File exportOptionsPlist = profilesManager
+          .exportOptionsPlist(appId, data.profile, certificateSha1: data.sha1);
 
-    if (csr != null) {
-      final _ProvisionProfileWithCertificateSha1 data =
-          await createAndInstallProvisionProfile(appId, csr);
+      final InfraBuildConfiguration buildConfiguration =
+          _createBuildConfiguration(csr, data, exportOptionsPlist);
 
-      final File exportOptionsPlist = data.profile.generateExportOptionsPlist(
-        infraDirectory,
-        appId,
-        certificateSha1: data.sha1,
-      );
+      profilesManager.deleteProvisionProfileLocally(data.profile);
+      certificatesManager.cleanupLocally();
 
-      return _createConfiguration(csr, data, exportOptionsPlist);
+      return buildConfiguration;
     }
 
     throw UnrecoverableException(
@@ -94,54 +94,49 @@ class IosSetupExecutor extends SetupExecutor {
   @visibleForTesting
   Future<_ProvisionProfileWithCertificateSha1> getAndInstallProvisionProfile(
     String appId,
-    String provisionProfileUUID,
+    String provisionProfileID,
     CertificateSigningRequest csr,
   ) async {
-    final Profile? profile =
-        await profilesManager.getProfileWithUUID(provisionProfileUUID);
+    final ProvisionProfile? profile =
+        await profilesManager.getProfileWithID(provisionProfileID);
 
     if (profile == null) {
       throw UnrecoverableException(
-        'No provision profile found with uuid $provisionProfileUUID, '
+        'No provision profile found with uuid $provisionProfileID, '
         'in your available list of provision profiles',
         ExitCode.config.code,
       );
     }
 
-    final BundleId bundleId =
-        await bundleIdManager.api.get(profile.bundleId.id);
+    final BundleId? bundleId =
+        await bundleIdManager.getBundleId(profile.bundleId.id);
 
-    if (bundleId.identifier != appId) {
+    if (bundleId != null && bundleId.identifier != appId) {
       throw UnrecoverableException(
-        'The specified provision profile is bundle id does not the current '
-        'project appId\n${bundleId.identifier} != $appId',
+        'The specified provision profile is bundle id does not match '
+        'the current project appId\n${bundleId.identifier} != $appId',
         ExitCode.config.code,
       );
     }
 
     final Certificate? validCertificate =
-        await getValidDistributionCertificate(profile);
+        await profilesManager.getValidCertificate(profile);
 
     if (validCertificate != null) {
-      final bool areMatch = await certificatesManager.isSignedWithPrivateKey(
-        validCertificate,
-        csr.privateKey,
-      );
+      final bool isSignedByPrivateKey = await certificatesManager
+          .isSignedWithPrivateKey(validCertificate, csr.privateKey);
 
-      if (areMatch) {
-        certificatesManager.keychainsManager
-            .importIntoAppKeychain(csr.privateKey);
+      if (isSignedByPrivateKey) {
+        certificatesManager.importCertificateFileLocally(csr.privateKey);
 
         final File? publicKey = csr.publicKey;
 
         if (publicKey != null) {
-          certificatesManager.keychainsManager.importIntoAppKeychain(publicKey);
+          certificatesManager.importCertificateFileLocally(publicKey);
         }
 
         final String? sha1 =
-            await certificatesManager.importCertificate(validCertificate);
-
-        profilesManager.importProfile(profile);
+            certificatesManager.importCertificateLocally(validCertificate);
 
         return _ProvisionProfileWithCertificateSha1(profile, sha1);
       }
@@ -153,7 +148,7 @@ class IosSetupExecutor extends SetupExecutor {
       );
     } else {
       throw UnrecoverableException(
-        'Provision profile with uuid $provisionProfileUUID does not have '
+        'Provision profile with uuid $provisionProfileID does not have '
         'usable distribution certificate\n'
         "Either create one in the developer portal or don't specify the "
         'provision profile, we will create a new provision profile.',
@@ -170,44 +165,56 @@ class IosSetupExecutor extends SetupExecutor {
   ) async {
     final BundleId bundleId = await bundleIdManager.getOrCreateBundleId(appId);
 
-    final Certificate certificate = await certificatesManager
-        .createAndCleanDistributionCertificate(csr.request);
+    final CertificateType certificateType =
+        configuration.iosProvisionProfileType.isDevelopment()
+            ? CertificateType.development
+            : CertificateType.distribution;
 
-    final Profile newProfile = await profilesManager.reCreateDistribution(
+    final Certificate? certificateSignedByKey =
+        await certificatesManager.findCertificateSignedByKey(csr.privateKey);
+
+    final Certificate certificate;
+
+    if (certificateSignedByKey?.type == certificateType) {
+      certificate = certificateSignedByKey!;
+    } else {
+      certificate = await certificatesManager.createCertificate(
+        csr.request,
+        certificateType,
+      );
+    }
+
+    final List<Device> devices;
+
+    if (configuration.iosProvisionProfileType ==
+        ProvisionProfileType.iosAppStore) {
+      devices = <Device>[];
+    } else {
+      devices = await deviceManager.getAllDevices();
+    }
+
+    final ProvisionProfile newProfile =
+        await profilesManager.createProvisionProfile(
       bundleId,
       <Certificate>[certificate],
-      const <Device>[],
+      devices,
+      configuration.iosProvisionProfileType,
     );
 
-    certificatesManager.keychainsManager.importIntoAppKeychain(csr.privateKey);
+    certificatesManager.importCertificateFileLocally(csr.privateKey);
 
     final File? publicKey = csr.publicKey;
 
     if (publicKey != null) {
-      certificatesManager.keychainsManager.importIntoAppKeychain(publicKey);
+      certificatesManager.importCertificateFileLocally(publicKey);
     }
 
     final String? sha1 =
-        await certificatesManager.importCertificate(certificate);
+        certificatesManager.importCertificateLocally(certificate);
 
-    profilesManager.importProfile(newProfile);
+    profilesManager.importProvisionProfileLocally(newProfile);
 
     return _ProvisionProfileWithCertificateSha1(newProfile, sha1);
-  }
-
-  ///
-  @visibleForTesting
-  Future<Certificate?> getValidDistributionCertificate(
-    final Profile profile,
-  ) async {
-    for (final ProfileRelation relation in profile.certificates) {
-      final Certificate certificate =
-          await certificatesManager.api.get(relation.id);
-
-      if (certificate.isDistribution() && !certificate.hasExpired()) {
-        return certificate;
-      }
-    }
   }
 
   ///
@@ -273,7 +280,7 @@ class IosSetupExecutor extends SetupExecutor {
     return null;
   }
 
-  InfraBuildConfiguration _createConfiguration(
+  InfraBuildConfiguration _createBuildConfiguration(
     final CertificateSigningRequest csr,
     final _ProvisionProfileWithCertificateSha1 profileData,
     final File exportOptionsPlist,
@@ -290,8 +297,9 @@ class IosSetupExecutor extends SetupExecutor {
           configuration.iosCertificateSigningRequestName,
       iosCertificateSigningRequestEmail:
           configuration.iosCertificateSigningRequestEmail,
-      iosDistributionProvisionProfileUUID: profileData.profile.uuid,
-      iosDistributionCertificateId: profileData.profile.certificates.first.id,
+      iosProvisionProfileId: profileData.profile.id,
+      iosProvisionProfileType: profileData.profile.type,
+      iosCertificateId: profileData.profile.certificates.first.id,
       iosExportOptionsPlist: exportOptionsPlist,
       encryptor: configuration.encryptor,
       storage: configuration.storage,
@@ -304,7 +312,7 @@ class IosSetupExecutor extends SetupExecutor {
 }
 
 class _ProvisionProfileWithCertificateSha1 {
-  final Profile profile;
+  final ProvisionProfile profile;
   final String? sha1;
 
   const _ProvisionProfileWithCertificateSha1(this.profile, this.sha1);

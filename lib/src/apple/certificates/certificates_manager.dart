@@ -1,14 +1,14 @@
 import 'dart:io';
 
-import 'package:db_infra/src/apis/apple/api/appstoreconnectapi_certificates.dart';
-import 'package:db_infra/src/apis/apple/certificate.dart';
-import 'package:db_infra/src/apis/apple/certificate_signing_request.dart';
-import 'package:db_infra/src/apis/apple/keychains_manager.dart';
+import 'package:db_infra/src/apple/certificates/api/appstoreconnectapi_certificates.dart';
+import 'package:db_infra/src/apple/certificates/certificate.dart';
+import 'package:db_infra/src/apple/certificates/certificate_signing_request.dart';
+import 'package:db_infra/src/apple/certificates/certificate_type.dart';
+import 'package:db_infra/src/apple/certificates/keychains_manager.dart';
+import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/file_utils.dart';
-import 'package:http/http.dart';
-import 'package:io/ansi.dart';
 import 'package:io/io.dart';
 import 'package:meta/meta.dart';
 
@@ -29,65 +29,31 @@ const String _publicKeyKeyword = 'BEGIN PUBLIC KEY';
 ///
 class CertificatesManager {
   ///
-  final KeychainsManager keychainsManager;
+  final KeychainsManager _keychainsManager;
 
   ///
-  final AppStoreConnectApiCertificates api;
+  final AppStoreConnectApiCertificates _api;
 
   ///
-  final Client httpClient;
+  final Logger logger;
 
   ///
   final ShellRunner runner;
 
   ///
-  CertificatesManager({
-    required this.keychainsManager,
-    required this.httpClient,
-    required this.api,
+  CertificatesManager(
+    this._keychainsManager,
+    this.logger,
+    this._api, {
     this.runner = const ShellRunner(),
   });
 
-  // Future<void> installAppleWWDeveloperRelationsCertificates() async {
-  //   final Directory tempDir = Directory.systemTemp;
-  //
-  //   final Future<File> Function(String url) download = (String url) async {
-  //     try {
-  //       final Uri uri = Uri.parse(url);
-  //
-  //       final Uint8List fileData = await httpClient.readBytes(uri);
-  //
-  //       return File('${tempDir.path}/${path.basename(url)}')
-  //         ..writeAsBytesSync(fileData, flush: true);
-  //     } on ClientException catch (nme) {
-  //       throw UnrecoverableException(nme.message, ExitCode.osFile.code);
-  //     }
-  //   };
-  //
-  //   final File appleWWDRCAFile = await download(_appleWWDRCA);
-  //
-  //   keychainsManager.importIntoAppKeychain(appleWWDRCAFile);
-  //
-  //   final File appleWWDRCAG3 = await download(_appleWWDRCAG3);
-  //
-  //   keychainsManager.importIntoAppKeychain(appleWWDRCAG3);
-  // }
-
-  // bool hasAppleWorldwideDevCertificate() {
-  //   final List<String> certificates =
-  //       keychainsManager.getCertificateInAppKeychain(_appleWWDRCAName);
-  //
-  //   return certificates.length == 2;
-  // }
-
   ///
-  Future<Certificate?> getCertificateWithId(
-    String iosDistributionCertificateId,
-  ) async {
-    final List<Certificate> certificates = await api.getAll();
+  Future<Certificate?> getCertificate(String certificateId) async {
+    final List<Certificate> certificates = await _api.getAll();
 
     for (final Certificate certificate in certificates) {
-      if (certificate.id == iosDistributionCertificateId) {
+      if (certificate.id == certificateId) {
         return certificate;
       }
     }
@@ -96,37 +62,46 @@ class CertificatesManager {
   }
 
   ///
-  Future<String?> importCertificate(final Certificate certificate) async {
+  String? importCertificateLocally(final Certificate certificate) {
     final File certificateFile = createCertificateFileFromBase64(
       contentAsBase64: certificate.content,
       filename: certificate.id,
     );
 
-    keychainsManager.importIntoAppKeychain(certificateFile);
+    importCertificateFileLocally(certificateFile);
 
-    stdout.writeln(
-      green.wrap(
-        'Added certificate ${certificate.id} of '
-        'type ${certificate.type} to keychains',
-      ),
+    logger.logSuccess(
+      'Added certificate ${certificate.id} of type ${certificate.type} locally',
     );
 
-    return keychainsManager.getCertificateSha1Hash(certificate.serialNumber);
+    return _keychainsManager.getCertificateSha1Hash(certificate.serialNumber);
   }
 
   ///
-  Future<Certificate> createAndCleanDistributionCertificate(
-    final File csr,
-  ) async {
-    final List<Certificate> certificates = await api.getAll();
+  void importCertificateFileLocally(File certificateFile) {
+    _keychainsManager.importIntoAppKeychain(certificateFile);
+  }
 
-    await Future.forEach(certificates, (Certificate certificate) async {
+  ///
+  Future<Certificate> createCertificate(
+    final File csr,
+    final CertificateType certificateType,
+  ) {
+    return _api.create(csr.readAsStringSync(), certificateType);
+  }
+
+  ///
+  Future<void> deleteCertificateOfType(CertificateType type) async {
+    final List<Certificate> certificates = await _api.getAll();
+
+    return Future.forEach(certificates, (Certificate certificate) async {
       if (certificate.isDistribution()) {
-        await api.delete(certificate.id);
+        await _api.delete(certificate.id);
+        logger.logSuccess(
+          'Deleted certificate ${certificate.id} of type ${certificate.type}',
+        );
       }
     });
-
-    return api.create(csr.readAsStringSync());
   }
 
   ///
@@ -147,6 +122,20 @@ class CertificatesManager {
     return certificateMd5 != null &&
         privateKeyMd5 != null &&
         certificateMd5 == privateKeyMd5;
+  }
+
+  ///
+  Future<Certificate?> findCertificateSignedByKey(File privateKey) async {
+    final List<Certificate> certificates = await _api.getAll();
+
+    for (final Certificate certificate in certificates) {
+      final bool isSignedByKey =
+          await isSignedWithPrivateKey(certificate, privateKey);
+
+      if (isSignedByKey) {
+        return certificate;
+      }
+    }
   }
 
   ///
@@ -296,10 +285,10 @@ class CertificatesManager {
 
   ///
   Future<void> deleteAllCertificates() async {
-    final List<Certificate> certificates = await api.getAll();
+    final List<Certificate> certificates = await _api.getAll();
 
     for (final Certificate certificate in certificates) {
-      await api.delete(certificate.id);
+      await _api.delete(certificate.id);
     }
   }
 
@@ -347,11 +336,7 @@ class CertificatesManager {
 
   void _getOrCreatePrivateKey(File? privateKey, String privateKeyFileName) {
     if (privateKey != null && privateKey.existsSync()) {
-      stdout.writeln(
-        blue.wrap(
-          'Reusing CSR Private Key $privateKeyFileName.',
-        ),
-      );
+      logger.logInfo('Reusing CSR Private Key $privateKeyFileName.');
 
       File(privateKeyFileName).writeAsBytesSync(
         privateKey.readAsBytesSync(),
@@ -359,11 +344,7 @@ class CertificatesManager {
         flush: true,
       );
     } else {
-      stdout.writeln(
-        blue.wrap(
-          'Creating CSR Private Key $privateKeyFileName...',
-        ),
-      );
+      logger.logInfo('Creating CSR Private Key $privateKeyFileName...');
 
       final ShellOutput rsaOutput = runner.execute(
         'openssl',
@@ -375,11 +356,7 @@ class CertificatesManager {
         throw UnrecoverableException(rsaOutput.stderr, ExitCode.tempFail.code);
       }
 
-      stdout.writeln(
-        green.wrap(
-          'Created CSR Private Key $privateKeyFileName.',
-        ),
-      );
+      logger.logSuccess('Created CSR Private Key $privateKeyFileName.');
     }
   }
 
@@ -389,11 +366,10 @@ class CertificatesManager {
     String? csrEmail,
     String? csrName,
   }) {
-    stdout.writeln(
-      blue.wrap(
-        'Creating CSR $csrKeyFileName from Private Key $privateKeyFileName...',
-      ),
+    logger.logInfo(
+      'Creating $csrKeyFileName from Private Key $privateKeyFileName...',
     );
+
     final List<String> arguments = <String>[
       'req',
       '-new',
@@ -419,8 +395,8 @@ class CertificatesManager {
       throw UnrecoverableException(csrOutput.stderr, ExitCode.tempFail.code);
     }
 
-    stdout.writeln(
-      green.wrap('Certificate signing request $csrKeyFileName created.'),
+    logger.logSuccess(
+      'Created $csrKeyFileName from Private Key $privateKeyFileName',
     );
   }
 
@@ -428,11 +404,10 @@ class CertificatesManager {
     String privateKeyFileName,
     String publicKeyFileName,
   ) {
-    stdout.writeln(
-      blue.wrap(
-        'Creating Public Key from Private Key $privateKeyFileName.',
-      ),
+    logger.logInfo(
+      'Creating $publicKeyFileName from Private Key $privateKeyFileName...',
     );
+
     final ShellOutput publicRsaOutput = runner.execute(
       'openssl',
       <String>[
@@ -455,11 +430,14 @@ class CertificatesManager {
       );
     }
 
-    stdout.writeln(
-      green.wrap(
-        'Created Public Key $publicKeyFileName.',
-      ),
+    logger.logSuccess(
+      'Created $publicKeyFileName from Private Key $privateKeyFileName',
     );
+  }
+
+  ///
+  Future<void> cleanupLocally() async {
+    _keychainsManager.deleteKeychain(_keychainsManager.appKeychain);
   }
 }
 

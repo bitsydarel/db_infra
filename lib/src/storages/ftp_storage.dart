@@ -33,16 +33,22 @@ class FtpStorage extends Storage {
   final FTPConnect _ftpConnection;
 
   ///
+  final Logger logger;
+
+  ///
+  final Directory infraDirectory;
+
+  ///
   FtpStorage({
     required this.username,
     required this.password,
     required this.serverUrl,
     required this.serverPort,
     required this.serverFolderName,
-    required Logger logger,
-    required Directory infraDirectory,
+    required this.logger,
+    required this.infraDirectory,
     @visibleForTesting FTPConnect? ftpConnection,
-  })  : _ftpConnection = ftpConnection ??
+  }) : _ftpConnection = ftpConnection ??
             FTPConnect(
               serverUrl,
               user: username,
@@ -50,8 +56,7 @@ class FtpStorage extends Storage {
               port: serverPort,
               debug: logger.enableLogging,
               timeout: const Duration(minutes: 5).inSeconds,
-            ),
-        super(logger, infraDirectory);
+            );
 
   ///
   factory FtpStorage.fromJson(

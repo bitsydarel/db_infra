@@ -1,4 +1,4 @@
-import 'package:db_infra/src/apis/apple/device.dart';
+import 'package:db_infra/src/apple/device/device.dart';
 import 'package:db_infra/src/utils/types.dart';
 import 'package:json_annotation/json_annotation.dart';
 

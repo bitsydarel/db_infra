@@ -1,9 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:db_infra/src/apis/apple/api/appstoreconnectapi.dart';
-import 'package:db_infra/src/apis/apple/api/certificates_dto.dart';
-import 'package:db_infra/src/apis/apple/certificate.dart';
+import 'package:db_infra/src/apple/appstoreconnectapi.dart';
+import 'package:db_infra/src/apple/certificates/api/certificates_dto.dart';
+import 'package:db_infra/src/apple/certificates/certificate.dart';
+import 'package:db_infra/src/apple/certificates/certificate_type.dart';
 import 'package:db_infra/src/run_configuration.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/types.dart';
@@ -19,7 +20,10 @@ class AppStoreConnectApiCertificates extends AppStoreConnectApi<Certificate> {
   }) : super(httpClient: httpClient, configuration: configuration);
 
   ///
-  Future<Certificate> create(final String parameter) async {
+  Future<Certificate> create(
+    final String parameter,
+    CertificateType certificateType,
+  ) async {
     final Uri url = Uri.parse('${AppStoreConnectApi.baseUrl}/certificates');
 
     final CreateCertificateRequest requestBody = CreateCertificateRequest(
@@ -27,7 +31,7 @@ class AppStoreConnectApiCertificates extends AppStoreConnectApi<Certificate> {
         type: 'certificates',
         attributes: CertificateCreateAttributes(
           csrContent: parameter,
-          certificateType: 'IOS_DISTRIBUTION',
+          certificateType: certificateType.key,
         ),
       ),
     );
@@ -79,9 +83,14 @@ class AppStoreConnectApiCertificates extends AppStoreConnectApi<Certificate> {
   ///
   @override
   Future<List<Certificate>> getAll() async {
+    final List<String> types = CertificateType.values
+        .where((CertificateType type) => type != CertificateType.other)
+        .map((CertificateType type) => type.key)
+        .toList();
+
     final Uri url = Uri.parse(
       '${AppStoreConnectApi.baseUrl}/certificates'
-      '?filter[certificateType]=IOS_DISTRIBUTION,DISTRIBUTION&limit=20',
+      '?filter[certificateType]=${types.join(',')}&limit=20',
     );
 
     try {

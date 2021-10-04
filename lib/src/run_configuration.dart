@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/build_output_type.dart';
 import 'package:db_infra/src/encryptor.dart';
 import 'package:db_infra/src/encryptor_type.dart';
@@ -42,6 +43,9 @@ abstract class RunConfiguration {
   final AndroidBuildOutputType androidBuildOutputType;
 
   ///
+  final ProvisionProfileType iosProvisionProfileType;
+
+  ///
   const RunConfiguration({
     required this.androidAppId,
     required this.iosAppId,
@@ -54,5 +58,6 @@ abstract class RunConfiguration {
     required this.encryptorType,
     required this.iosBuildOutputType,
     required this.androidBuildOutputType,
+    required this.iosProvisionProfileType,
   });
 }

@@ -1,16 +1,12 @@
 import 'dart:io';
 
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/storage.dart';
 import 'package:db_infra/src/utils/types.dart';
 
 ///
 class GoogleCloudStorage extends Storage {
   ///
-  const GoogleCloudStorage(
-    Logger logger,
-    Directory infraDirectory,
-  ) : super(logger, infraDirectory);
+  const GoogleCloudStorage() : super();
 
   @override
   Future<List<File>> loadFiles() async {

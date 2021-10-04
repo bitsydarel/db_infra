@@ -15,11 +15,17 @@ class DiskStorage extends Storage {
   final Directory storageDirectory;
 
   ///
+  final Logger logger;
+
+  ///
+  final Directory infraDirectory;
+
+  ///
   const DiskStorage({
     required this.storageDirectory,
-    required Logger logger,
-    required Directory infraDirectory,
-  }) : super(logger, infraDirectory);
+    required this.logger,
+    required this.infraDirectory,
+  });
 
   /// Infrastructure disk storage from json.
   factory DiskStorage.fromJson(
@@ -71,7 +77,7 @@ class DiskStorage extends Storage {
     storageDirectory.createSync(recursive: true);
 
     for (final File file in files) {
-      copyFile(storageDirectory, file);
+      storageDirectory.copyFile(file);
     }
   }
 

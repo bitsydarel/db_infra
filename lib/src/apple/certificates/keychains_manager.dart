@@ -1,8 +1,8 @@
 import 'dart:io';
 
+import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
-import 'package:io/ansi.dart';
 import 'package:io/io.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
@@ -28,11 +28,15 @@ class KeychainsManager {
   late final String defaultKeychain;
 
   ///
+  final Logger logger;
+
+  ///
   final ShellRunner runner;
 
   ///
   KeychainsManager({
     required this.appKeychain,
+    required this.logger,
     this.runner = const ShellRunner(),
   }) {
     final List<String> keychains = listAllKeychains();
@@ -92,7 +96,7 @@ class KeychainsManager {
     );
 
     if (output.stderr.contains(_keychainItemAlreadyExist)) {
-      stderr.writeln(
+      logger.logError(
         '${file.path} already exists in the $appKeychain keychain.',
       );
     } else if (output.stderr.isNotEmpty) {
@@ -105,6 +109,8 @@ class KeychainsManager {
   ///
   @visibleForTesting
   void createKeychain(String name) {
+    logger.logInfo('Creating keychain $name...');
+
     final ShellOutput output = runner.execute(
       'security',
       <String>['create-keychain', '-p', name, name],
@@ -116,11 +122,10 @@ class KeychainsManager {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
     }
 
-    stdout.writeln(green.wrap('Created keychain $name'));
+    logger.logSuccess('Created keychain $name.');
   }
 
   ///
-  @visibleForTesting
   void deleteKeychain(String name) {
     final ShellOutput output = runner.execute(
       'security',
@@ -180,7 +185,7 @@ class KeychainsManager {
         throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
       }
     } else {
-      stdout.writeln(
+      logger.logError(
         'adding partition ids is not supported on this OS, skipping',
       );
     }
@@ -269,8 +274,12 @@ class KeychainsManager {
         .toList();
 
     for (final String certificate in certificates) {
-      final String? certSerialNumber =
+      String? certSerialNumber =
           _serialNumberFinder.stringMatch(certificate)?.trim();
+
+      if (certSerialNumber?.startsWith('0') == true) {
+        certSerialNumber = certSerialNumber!.substring(1);
+      }
 
       if (certSerialNumber == serialNumber) {
         return _sha1Finder.stringMatch(certificate)?.trim();

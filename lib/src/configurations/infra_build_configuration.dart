@@ -1,15 +1,17 @@
 import 'dart:io';
 
+import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/build_output_type.dart';
 import 'package:db_infra/src/encryptor.dart';
 import 'package:db_infra/src/encryptor_type.dart';
+import 'package:db_infra/src/encryptors/encryptor_factory.dart';
 import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/run_configuration.dart';
 import 'package:db_infra/src/storage.dart';
 import 'package:db_infra/src/storage_type.dart';
 import 'package:db_infra/src/storages/storage_factory.dart';
+import 'package:db_infra/src/utils/constants.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
-import 'package:db_infra/src/utils/infra_extensions.dart';
 import 'package:db_infra/src/utils/types.dart';
 import 'package:io/io.dart';
 import 'package:path/path.dart' as path;
@@ -29,10 +31,10 @@ class InfraBuildConfiguration extends RunConfiguration {
   final String? iosCertificateSigningRequestEmail;
 
   ///
-  final String iosDistributionProvisionProfileUUID;
+  final String iosProvisionProfileId;
 
   ///
-  final String iosDistributionCertificateId;
+  final String iosCertificateId;
 
   ///
   final File iosExportOptionsPlist;
@@ -50,12 +52,13 @@ class InfraBuildConfiguration extends RunConfiguration {
     required EncryptorType encryptorType,
     required IosBuildOutputType iosBuildOutputType,
     required AndroidBuildOutputType androidBuildOutputType,
+    required ProvisionProfileType iosProvisionProfileType,
     required this.iosCertificateSigningRequest,
     required this.iosCertificateSigningRequestPrivateKey,
     required this.iosCertificateSigningRequestName,
     required this.iosCertificateSigningRequestEmail,
-    required this.iosDistributionProvisionProfileUUID,
-    required this.iosDistributionCertificateId,
+    required this.iosProvisionProfileId,
+    required this.iosCertificateId,
     required this.iosExportOptionsPlist,
   }) : super(
           androidAppId: androidAppId,
@@ -69,45 +72,43 @@ class InfraBuildConfiguration extends RunConfiguration {
           encryptorType: encryptorType,
           iosBuildOutputType: iosBuildOutputType,
           androidBuildOutputType: androidBuildOutputType,
+          iosProvisionProfileType: iosProvisionProfileType,
         );
 
   ///
   static Future<InfraBuildConfiguration> fromJson({
     required final JsonMap json,
-    required final StorageType infraStorageType,
-    required final EncryptorType infraEncryptorType,
-    required final Encryptor infraEncryptor,
     required final Logger logger,
     required final Directory infraDir,
   }) async {
-    final Object? androidAppId = json['androidAppId'];
+    final Object? androidAppId = json[androidAppIdArg];
 
-    final Object? iosAppId = json['iosAppId'];
+    final Object? iosAppId = json[iosAppIdArg];
 
-    final Object? iosAppStoreConnectKeyId = json['iosAppStoreConnectKeyId'];
+    final Object? iosAppStoreConnectKeyId = json[iosAppStoreConnectKeyIdArg];
 
     final Object? iosAppStoreConnectKeyIssuer =
-        json['iosAppStoreConnectKeyIssuer'];
+        json[iosAppStoreConnectKeyIssuerArg];
 
-    final Object? iosAppStoreConnectKey = json['iosAppStoreConnectKey'];
+    final Object? iosAppStoreConnectKey = json[iosAppStoreConnectKeyPathArg];
 
     final Object? iosCertificateSigningRequest =
-        json['iosCertificateSigningRequest'];
+        json[iosCertificateSigningRequestPathArg];
 
     final Object? iosCertificateSigningRequestPrivateKey =
-        json['iosCertificateSigningRequestPrivateKey'];
+        json[iosCertificateSigningRequestPrivateKeyPathArg];
 
     final Object? iosCertificateSigningRequestName =
-        json['iosCertificateSigningRequestName'];
+        json[iosCertificateSigningRequestNameArg];
 
     final Object? iosCertificateSigningRequestEmail =
-        json['iosCertificateSigningRequestEmail'];
+        json[iosCertificateSigningRequestEmailArg];
 
-    final Object? iosDistributionProvisionProfileUUID =
-        json['iosDistributionProvisionProfileUUID'];
+    final Object? iosProvisionProfileId = json[iosProvisionProfileIdArg];
 
-    final Object? iosDistributionCertificateId =
-        json['iosDistributionCertificateId'];
+    final Object? iosProvisionProfileType = json[iosProvisionProfileTypeArg];
+
+    final Object? iosCertificateId = json[iosCertificateIdArg];
 
     final Object? iosExportOptionsPlist = json['iosExportOptionsPlist'];
 
@@ -115,11 +116,18 @@ class InfraBuildConfiguration extends RunConfiguration {
 
     final Object? androidBuildOutputType = json['androidBuildOutputType'];
 
+    final EncryptorType encryptorType = json.getEncryptorType();
+
+    final Encryptor encryptor =
+        json.getEncryptor(encryptorType, logger, infraDir);
+
+    final StorageType infraStorageType = json.getStorageType();
+
     final Object? storageRaw = json['storage'];
 
     // decrypt the storage as it's value is encrypted.
     final JsonMap storageAsJson = storageRaw is JsonMap
-        ? await storageRaw.asDecrypted(infraEncryptor)
+        ? await storageRaw.asDecrypted(encryptor)
         : throw UnrecoverableException(
             'Infrastructure storage invalid json: $storageRaw',
             ExitCode.config.code,
@@ -154,20 +162,22 @@ class InfraBuildConfiguration extends RunConfiguration {
           iosCertificateSigningRequestEmail is String
               ? iosCertificateSigningRequestEmail
               : null,
-      iosDistributionProvisionProfileUUID:
-          iosDistributionProvisionProfileUUID is String
-              ? iosDistributionProvisionProfileUUID
-              : throw ArgumentError(iosDistributionProvisionProfileUUID),
-      iosDistributionCertificateId: iosDistributionCertificateId is String
-          ? iosDistributionCertificateId
-          : throw ArgumentError(iosDistributionCertificateId),
+      iosProvisionProfileId: iosProvisionProfileId is String
+          ? iosProvisionProfileId
+          : throw ArgumentError(iosProvisionProfileId),
+      iosProvisionProfileType: iosProvisionProfileType is String
+          ? iosProvisionProfileType.fromKey()
+          : throw ArgumentError(iosProvisionProfileType),
+      iosCertificateId: iosCertificateId is String
+          ? iosCertificateId
+          : throw ArgumentError(iosCertificateId),
       iosExportOptionsPlist: iosExportOptionsPlist is String
           ? File('${infraDir.path}/$iosExportOptionsPlist')
           : throw ArgumentError(iosExportOptionsPlist),
       storageType: infraStorageType,
       storage: infraStorageType.fromJson(storageAsJson, logger, infraDir),
-      encryptorType: infraEncryptorType,
-      encryptor: infraEncryptor,
+      encryptorType: encryptorType,
+      encryptor: encryptor,
       iosBuildOutputType: iosBuildOutputType is String
           ? iosBuildOutputType.asIosBuildOutputType()
           : throw ArgumentError(iosBuildOutputType),
@@ -183,27 +193,100 @@ class InfraBuildConfiguration extends RunConfiguration {
         await storage.toJson().asEncrypted(encryptor);
 
     return <String, Object?>{
-      'androidAppId': androidAppId,
-      'iosAppId': iosAppId,
-      'iosAppStoreConnectKeyId': iosAppStoreConnectKeyId,
-      'iosAppStoreConnectKeyIssuer': iosAppStoreConnectKeyIssuer,
-      'iosAppStoreConnectKey': path.basename(iosAppStoreConnectKey.path),
-      'iosCertificateSigningRequest':
+      androidAppIdArg: androidAppId,
+      iosAppIdArg: iosAppId,
+      iosAppStoreConnectKeyIdArg: iosAppStoreConnectKeyId,
+      iosAppStoreConnectKeyIssuerArg: iosAppStoreConnectKeyIssuer,
+      iosAppStoreConnectKeyPathArg: path.basename(iosAppStoreConnectKey.path),
+      iosCertificateSigningRequestPathArg:
           path.basename(iosCertificateSigningRequest.path),
-      'iosCertificateSigningRequestPrivateKey':
+      iosCertificateSigningRequestPrivateKeyPathArg:
           path.basename(iosCertificateSigningRequestPrivateKey.path),
-      'iosCertificateSigningRequestName': iosCertificateSigningRequestName,
-      'iosCertificateSigningRequestEmail': iosCertificateSigningRequestEmail,
-      'iosDistributionProvisionProfileUUID':
-          iosDistributionProvisionProfileUUID,
-      'iosDistributionCertificateId': iosDistributionCertificateId,
+      iosCertificateSigningRequestNameArg: iosCertificateSigningRequestName,
+      iosCertificateSigningRequestEmailArg: iosCertificateSigningRequestEmail,
+      iosProvisionProfileIdArg: iosProvisionProfileId,
+      iosProvisionProfileTypeArg: iosProvisionProfileType.key,
+      iosCertificateIdArg: iosCertificateId,
       'iosExportOptionsPlist': path.basename(iosExportOptionsPlist.path),
       'encryptor': encryptor.toJson(),
-      'encryptorType': encryptorType.name,
+      infraEncryptorTypeArg: encryptorType.name,
       'storage': encryptedStorageProperties,
-      'storageType': storageType.name,
+      infraStorageTypeArg: storageType.name,
       'iosBuildOutputType': iosBuildOutputType.name,
       'androidBuildOutputType': androidBuildOutputType.name,
     };
+  }
+}
+
+///
+extension InfraConfigurationJsonExtension on JsonMap {
+  ///
+  StorageType getStorageType() {
+    final Object? storageType = this[infraStorageTypeArg];
+
+    return storageType is String
+        ? storageType.asStorageType()
+        : throw ArgumentError(storageType);
+  }
+
+  ///
+  EncryptorType getEncryptorType() {
+    final Object? encryptorType = this[infraEncryptorTypeArg];
+
+    return encryptorType is String
+        ? encryptorType.asEncryptorType()
+        : throw UnrecoverableException(
+            'Infrastructure encryptor type could not be parsed from json $this',
+            ExitCode.config.code,
+          );
+  }
+
+  ///
+  Encryptor getEncryptor(
+    final EncryptorType encryptorType,
+    final Logger infraLogger,
+    final Directory infraDirectory,
+  ) {
+    final Object? encryptorAsJson = this['encryptor'];
+
+    return encryptorType.fromJson(
+      encryptorAsJson is JsonMap
+          ? encryptorAsJson
+          : throw UnrecoverableException(
+              'Infrastructure encryptor could not be parsed from json $this',
+              ExitCode.config.code,
+            ),
+      infraDirectory,
+    );
+  }
+
+  ///
+  Future<JsonMap> asEncrypted(final Encryptor encryptor) async {
+    final JsonMap encryptedMap = <String, Object?>{};
+
+    for (final MapEntry<String, Object?> entry in entries) {
+      final Object? encryptedValue = entry.value != null
+          ? await encryptor.encrypt(entry.value.toString())
+          : entry.value;
+
+      encryptedMap[entry.key] = encryptedValue;
+    }
+
+    return encryptedMap;
+  }
+
+  ///
+  Future<JsonMap> asDecrypted(final Encryptor encryptor) async {
+    final JsonMap decryptedMap = <String, Object?>{};
+
+    for (final MapEntry<String, Object?> entry in entries) {
+      final Object? decryptedValue = entry.value != null
+          ? await encryptor.decrypt(entry.value.toString())
+          : entry.value;
+
+      decryptedMap[entry.key] = decryptedValue;
+    }
+
+    return decryptedMap;
   }
 }

@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:path/path.dart' as path;
+import 'package:path/path.dart' as path_util;
 
 /// Create a certificate file with ext 'cert' from the [contentAsBase64].
 ///
@@ -14,8 +14,21 @@ File createCertificateFileFromBase64({
 }
 
 ///
-void copyFile(final Directory directory, final File file) {
-  File(
-    path.join(directory.path, path.basename(file.path)),
-  ).writeAsBytesSync(file.readAsBytesSync(), flush: true);
+extension DirectoryExtensions on Directory {
+  ///
+  File copyFile(final File file) {
+    return File(
+      path_util.join(path, path_util.basename(file.path)),
+    )..writeAsBytesSync(file.readAsBytesSync(), flush: true);
+  }
+
+  ///
+  Directory createInfraDirectory() {
+    return Directory('$path/.infra')..createSync();
+  }
+}
+
+/// Get the project [Directory] with a full path.
+Directory getResolvedDirectory(String localDirectory) {
+  return Directory(path_util.canonicalize(localDirectory));
 }

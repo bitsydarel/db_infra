@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/build_output_type.dart';
 import 'package:db_infra/src/encryptor.dart';
 import 'package:db_infra/src/encryptor_type.dart';
@@ -22,10 +23,10 @@ class InfraSetupConfiguration extends RunConfiguration {
   final String? iosCertificateSigningRequestEmail;
 
   ///
-  final String? iosDistributionProvisionProfileUUID;
+  final String? iosProvisionProfileId;
 
   ///
-  final String? iosDistributionCertificateId;
+  final String? iosCertificateId;
 
   ///
   const InfraSetupConfiguration({
@@ -40,18 +41,20 @@ class InfraSetupConfiguration extends RunConfiguration {
     required EncryptorType encryptorType,
     required IosBuildOutputType iosBuildOutputType,
     required AndroidBuildOutputType androidBuildOutputType,
-    this.iosCertificateSigningRequestPath,
+    required ProvisionProfileType iosProvisionProfileType,
     this.iosCertificateSigningRequestPrivateKeyPath,
+    this.iosCertificateSigningRequestPath,
     this.iosCertificateSigningRequestName,
     this.iosCertificateSigningRequestEmail,
-    this.iosDistributionProvisionProfileUUID,
-    this.iosDistributionCertificateId,
+    this.iosProvisionProfileId,
+    this.iosCertificateId,
   }) : super(
           androidAppId: androidAppId,
           iosAppId: iosAppId,
           iosAppStoreConnectKeyId: iosAppStoreConnectKeyId,
           iosAppStoreConnectKeyIssuer: iosAppStoreConnectKeyIssuer,
           iosAppStoreConnectKey: iosAppStoreConnectKey,
+          iosProvisionProfileType: iosProvisionProfileType,
           storage: storage,
           encryptor: encryptor,
           storageType: storageType,

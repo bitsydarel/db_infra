@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:db_infra/src/apis/apple/api/appstoreconnectapi.dart';
-import 'package:db_infra/src/apis/apple/api/profiles_dto.dart';
-import 'package:db_infra/src/apis/apple/bundle_id.dart';
-import 'package:db_infra/src/apis/apple/certificate.dart';
-import 'package:db_infra/src/apis/apple/device.dart';
-import 'package:db_infra/src/apis/apple/profile.dart';
+import 'package:db_infra/src/apple/appstoreconnectapi.dart';
+import 'package:db_infra/src/apple/bundle_id/bundle_id.dart';
+import 'package:db_infra/src/apple/certificates/certificate.dart';
+import 'package:db_infra/src/apple/device/device.dart';
+import 'package:db_infra/src/apple/provision_profile/api/profiles_dto.dart';
+import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
+import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/run_configuration.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/types.dart';
@@ -14,7 +15,7 @@ import 'package:http/http.dart';
 import 'package:io/io.dart';
 
 ///
-class AppStoreConnectApiProfiles extends AppStoreConnectApi<Profile> {
+class AppStoreConnectApiProfiles extends AppStoreConnectApi<ProvisionProfile> {
   ///
   AppStoreConnectApiProfiles({
     required Client httpClient,
@@ -22,19 +23,23 @@ class AppStoreConnectApiProfiles extends AppStoreConnectApi<Profile> {
   }) : super(httpClient: httpClient, configuration: configuration);
 
   ///
-  Future<Profile> create(
+  Future<ProvisionProfile> create(
+    final ProvisionProfileType profileType,
     final BundleId bundleId,
     final List<Certificate> certificates,
     final List<Device> devices,
   ) async {
     final Uri url = Uri.parse('${AppStoreConnectApi.baseUrl}/profiles');
 
+    final String provisionProfileTypeName =
+        configuration.iosProvisionProfileType.exportMethod.toUpperCase();
+
     final CreateProfileRequest request = CreateProfileRequest(
       data: CreateProfileRequestData(
-        type: Profile.profileType,
+        type: ProvisionProfile.profileType,
         attributes: CreateProfileAttributes(
-          name: 'CI/CD AppStore ${configuration.iosAppId}',
-          profileType: 'IOS_APP_STORE',
+          name: 'CI/CD $provisionProfileTypeName ${configuration.iosAppId}',
+          profileType: profileType.key,
         ),
         relationships: CreateProfileRelationships(
           bundleId: CreateProfileRelationshipBundleId(
@@ -105,7 +110,7 @@ class AppStoreConnectApiProfiles extends AppStoreConnectApi<Profile> {
   }
 
   @override
-  Future<Profile> get(String id) async {
+  Future<ProvisionProfile> get(String id) async {
     final Uri url = Uri.parse(
         '${AppStoreConnectApi.baseUrl}/profiles/$id?include=bundleId,certificates,devices');
 
@@ -132,10 +137,17 @@ class AppStoreConnectApiProfiles extends AppStoreConnectApi<Profile> {
   }
 
   @override
-  Future<List<Profile>> getAll() async {
+  Future<List<ProvisionProfile>> getAll() async {
+    final List<String> types = ProvisionProfileType.values
+        .where((ProvisionProfileType type) {
+          return type != ProvisionProfileType.other;
+        })
+        .map((ProvisionProfileType e) => e.key)
+        .toList();
+
     final Uri url = Uri.parse(
       '${AppStoreConnectApi.baseUrl}/profiles'
-      '?filter[profileType]=IOS_APP_STORE'
+      '?filter[profileType]=${types.join(',')}'
       '&include=bundleId,certificates,devices',
     );
 
@@ -160,23 +172,4 @@ class AppStoreConnectApiProfiles extends AppStoreConnectApi<Profile> {
       throw UnrecoverableException(ce.message, ExitCode.tempFail.code);
     }
   }
-}
-
-///
-class CreateProfileParam {
-  ///
-  final BundleId bundleId;
-
-  ///
-  final List<Certificate> certificates;
-
-  ///
-  final List<Device> devices;
-
-  ///
-  const CreateProfileParam({
-    required this.bundleId,
-    required this.certificates,
-    required this.devices,
-  });
 }

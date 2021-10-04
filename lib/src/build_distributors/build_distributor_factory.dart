@@ -20,9 +20,12 @@ extension BuildDistributorExtension on BuildDistributorType {
       case BuildDistributorType.directory:
         final Directory outputDirectory = Directory(outputDirectoryPath ?? '');
 
-        if (outputDirectoryPath != null && outputDirectory.existsSync()) {
+        if (outputDirectoryPath != null) {
+          outputDirectory.createSync(recursive: true);
+
           return FileToDirectoryBuildDistributor(
             outputDirectory,
+            infraLogger,
             configuration,
           );
         } else {

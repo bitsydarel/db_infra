@@ -48,12 +48,14 @@ const String iosCertificateSigningRequestEmailArg = 'ios-csr-email';
 /// iOS certificate signing request name.
 const String iosCertificateSigningRequestNameArg = 'ios-csr-name';
 
-/// iOS distribution provision profile uuid.
-const String iosDistributionProvisionProfileUUIDArg =
-    'ios-provision-profile-uuid';
+/// iOS provision profile id.
+const String iosProvisionProfileIdArg = 'ios-provision-profile-id';
 
-/// iOS distribution certificate id.
-const String iosDistributionCertificateIdArg = 'ios-certificate-id';
+/// iOS provision profile type.
+const String iosProvisionProfileTypeArg = 'ios-provision-profile-type';
+
+/// iOS certificate id.
+const String iosCertificateIdArg = 'ios-certificate-id';
 
 /// Infrastructure storage type.
 const String infraStorageTypeArg = 'storage-type';
@@ -93,3 +95,6 @@ const String infraBuildDistributorTypeArg = 'build-distributor';
 
 /// Infrastructure output directory.
 const String infraBuildOutputDirectoryArg = 'build-output-dir';
+
+/// Infrastructure configuration file.
+const String infraConfigFileArg = 'config-file';

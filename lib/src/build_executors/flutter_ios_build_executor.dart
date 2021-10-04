@@ -1,12 +1,14 @@
 import 'dart:io';
 
-import 'package:db_infra/src/apis/apple/certificate.dart';
-import 'package:db_infra/src/apis/apple/certificates_manager.dart';
-import 'package:db_infra/src/apis/apple/profile.dart';
-import 'package:db_infra/src/apis/apple/profiles_manager.dart';
+import 'package:db_infra/src/apple/bundle_id/bundle_id_manager.dart';
+import 'package:db_infra/src/apple/certificates/certificate.dart';
+import 'package:db_infra/src/apple/certificates/certificates_manager.dart';
+import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
+import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.dart';
 import 'package:db_infra/src/build_executor.dart';
 import 'package:db_infra/src/build_output_type.dart';
 import 'package:db_infra/src/configurations/infra_build_configuration.dart';
+import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:io/io.dart';
@@ -18,15 +20,23 @@ class FlutterIosBuildExecutor extends BuildExecutor {
   final CertificatesManager certificatesManager;
 
   ///
-  final ProfilesManager profilesManager;
+  final ProvisionProfileManager provisionProfilesManager;
+
+  ///
+  final BundleIdManager bundleIdManager;
+
+  ///
+  final Logger logger;
 
   ///
   final ShellRunner runner;
 
   ///
   const FlutterIosBuildExecutor({
+    required this.provisionProfilesManager,
     required this.certificatesManager,
-    required this.profilesManager,
+    required this.bundleIdManager,
+    required this.logger,
     required Directory projectDirectory,
     required InfraBuildConfiguration configuration,
     this.runner = const ShellRunner(),
@@ -34,35 +44,36 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
   @override
   Future<File> build() async {
-    certificatesManager.keychainsManager.importIntoAppKeychain(
+    certificatesManager.importCertificateFileLocally(
       configuration.iosCertificateSigningRequestPrivateKey,
     );
 
-    final String certificateId = configuration.iosDistributionCertificateId;
+    final String certificateId = configuration.iosCertificateId;
 
     final Certificate? certificate =
-        await certificatesManager.getCertificateWithId(certificateId);
+        await certificatesManager.getCertificate(certificateId);
 
     if (certificate != null && !certificate.hasExpired()) {
-      await certificatesManager.importCertificate(certificate);
+      certificatesManager.importCertificateLocally(certificate);
     } else {
       throw UnrecoverableException(
-        'Certificate with id ${configuration.iosDistributionCertificateId} '
+        'Certificate with id ${configuration.iosCertificateId} '
         'not found or has expired.\nRe-Run the setup command.',
         ExitCode.tempFail.code,
       );
     }
 
-    final Profile? profile = await profilesManager.getProfileWithUUID(
-      configuration.iosDistributionProvisionProfileUUID,
+    final ProvisionProfile? profile =
+        await provisionProfilesManager.getProfileWithID(
+      configuration.iosProvisionProfileId,
     );
 
     if (profile != null) {
-      await profilesManager.importProfile(profile);
+      provisionProfilesManager.importProvisionProfileLocally(profile);
     } else {
       throw UnrecoverableException(
         'Provision Profile with uuid '
-        '${configuration.iosDistributionProvisionProfileUUID} not found.\n'
+        '${configuration.iosProvisionProfileId} not found.\n'
         'Re-Run the setup command.',
         ExitCode.tempFail.code,
       );
@@ -77,7 +88,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       'flutter',
       <String>[
         'build',
-        'ipa',
+        configuration.iosBuildOutputType.name,
         '--release',
         '--export-options-plist',
         configuration.iosExportOptionsPlist.path,
@@ -86,20 +97,21 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
     Directory.current = oldPath;
 
-    stdout.writeln(output.stdout);
-
     if (output.stderr.isNotEmpty) {
-      stderr.writeln(output.stderr);
+      logger.logError(output.stderr);
       throw UnrecoverableException(output.stderr, ExitCode.tempFail.code);
     }
 
     final File? outputFile =
         configuration.iosBuildOutputType.outputFile(projectDirectory);
 
-    if (outputFile != null) {
-      return outputFile;
-    } else {
+    if (outputFile == null) {
       throw UnrecoverableException('Could not find ', ExitCode.software.code);
     }
+
+    provisionProfilesManager.deleteProvisionProfileLocally(profile);
+    certificatesManager.cleanupLocally();
+
+    return outputFile;
   }
 }

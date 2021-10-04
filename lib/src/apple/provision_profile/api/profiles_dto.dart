@@ -1,7 +1,8 @@
-import 'package:db_infra/src/apis/apple/api/appstoreconnectapi.dart';
-import 'package:db_infra/src/apis/apple/api/bundle_ids_dto.dart';
-import 'package:db_infra/src/apis/apple/api/certificates_dto.dart';
-import 'package:db_infra/src/apis/apple/profile.dart';
+import 'package:db_infra/src/apple/appstoreconnectapi.dart';
+import 'package:db_infra/src/apple/bundle_id/api/bundle_ids_dto.dart';
+import 'package:db_infra/src/apple/certificates/api/certificates_dto.dart';
+import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
+import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/types.dart';
 import 'package:io/io.dart';
@@ -213,7 +214,7 @@ class GetProfilesResponse {
   }
 
   ///
-  List<Profile> toDomain() {
+  List<ProvisionProfile> toDomain() {
     return data.map(
       (ProfileResponseData profile) {
         return profile.toDomain();
@@ -281,10 +282,10 @@ class ProfileResponseData {
   JsonMap toJson() => _$ProfileResponseDataToJson(this);
 
   ///
-  Profile toDomain() {
-    return Profile(
+  ProvisionProfile toDomain() {
+    return ProvisionProfile(
       id: id,
-      type: Profile.toProfileType(attributes.profileType),
+      type: attributes.profileType.fromKey(),
       name: attributes.name,
       uuid: attributes.uuid,
       createdDate: DateTime.parse(attributes.createdDate),
@@ -292,13 +293,13 @@ class ProfileResponseData {
       content: attributes.profileContent,
       state: attributes.profileState,
       platform: attributes.platform,
-      bundleId: ProfileRelation(id: relationships.bundleId.data.id),
+      bundleId: ProvisionProfileRelation(id: relationships.bundleId.data.id),
       certificates: relationships.certificates.data.map(
         (ProfileResponseRelationshipData relation) {
-          return ProfileRelation(id: relation.id);
+          return ProvisionProfileRelation(id: relation.id);
         },
       ).toList(),
-      devices: const <ProfileRelation>[],
+      devices: const <ProvisionProfileRelation>[],
     );
   }
 }
