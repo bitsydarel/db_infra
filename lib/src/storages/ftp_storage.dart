@@ -1,9 +1,11 @@
 import 'dart:io';
 
+import 'package:db_infra/db_infra.dart';
 import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/storage.dart';
 import 'package:db_infra/src/utils/types.dart';
 import 'package:ftpconnect/ftpconnect.dart';
+import 'package:io/io.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as path;
 
@@ -55,7 +57,7 @@ class FtpStorage extends Storage {
               pass: password,
               port: serverPort,
               debug: logger.enableLogging,
-              timeout: const Duration(minutes: 5).inSeconds,
+              timeout: const Duration(minutes: 15).inSeconds,
             );
 
   ///
@@ -101,8 +103,7 @@ class FtpStorage extends Storage {
     final List<String> directoryPaths = path.split(serverFolderName);
 
     for (final String directoryPath in directoryPaths) {
-      await _ftpConnection.createFolderIfNotExist(directoryPath);
-      await _ftpConnection.changeDirectory(directoryPath);
+      await _changeDirectory(directoryPath);
     }
 
     await _ftpConnection.downloadFileWithRetry(
@@ -137,21 +138,56 @@ class FtpStorage extends Storage {
     );
 
     logger.logInfo(
-      'Creating directory $serverFolderName on ftp server if not exist',
+      'Creating directory $serverFolderName on ftp server if not exist.',
     );
 
     final List<String> directoryPaths = path.split(serverFolderName);
 
     for (final String directoryPath in directoryPaths) {
-      await _ftpConnection.createFolderIfNotExist(directoryPath);
-      await _ftpConnection.changeDirectory(directoryPath);
+      await _changeDirectory(directoryPath);
     }
 
-    _ftpConnection.uploadFileWithRetry(zipFile, pRetryCount: 3);
+    if (!zipFile.existsSync()) {
+      throw UnrecoverableException(
+        'Could not create file to upload to ftp server ${zipFile.path}',
+        ExitCode.osFile.code,
+      );
+    }
+
+    _ftpConnection.uploadFile(zipFile);
 
     logger.logSuccess('File uploads completed.');
+  }
 
-    zipFile.deleteSync(recursive: true);
+  Future<void> _changeDirectory(String directory) async {
+    final bool folderCreated =
+        await _ftpConnection.createFolderIfNotExist(directory);
+
+    if (!folderCreated) {
+      throw UnrecoverableException(
+        'Folder $directory does not exist and '
+        'could not be created on $serverUrl',
+        ExitCode.tempFail.code,
+      );
+    }
+
+    if (path.basename(await _ftpConnection.currentDirectory()) == directory) {
+      return;
+    }
+
+    final bool directoryChanged =
+        await _ftpConnection.changeDirectory(directory);
+
+    final String currentFtpDirectory = path.basename(
+      await _ftpConnection.currentDirectory(),
+    );
+
+    if (!directoryChanged || currentFtpDirectory != directory) {
+      throw UnrecoverableException(
+        'Could not move to folder $directory on $serverUrl',
+        ExitCode.tempFail.code,
+      );
+    }
   }
 
   @override

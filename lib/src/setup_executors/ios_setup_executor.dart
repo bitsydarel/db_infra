@@ -13,6 +13,7 @@ import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.d
 import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/configurations/infra_build_configuration.dart';
 import 'package:db_infra/src/configurations/infra_setup_configuration.dart';
+import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/setup_executor.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
@@ -34,6 +35,9 @@ class IosSetupExecutor extends SetupExecutor {
   final DeviceManager deviceManager;
 
   ///
+  final Logger logger;
+
+  ///
   final ShellRunner runner;
 
   ///
@@ -44,6 +48,7 @@ class IosSetupExecutor extends SetupExecutor {
     required this.certificatesManager,
     required this.bundleIdManager,
     required this.deviceManager,
+    required this.logger,
     this.runner = const ShellRunner(),
   }) : super(configuration, infraDirectory);
 
@@ -54,12 +59,12 @@ class IosSetupExecutor extends SetupExecutor {
     _ProvisionProfileWithCertificateSha1? data;
 
     CertificateSigningRequest? csr = getCertificateSigningRequestFile();
+
     final String? provisionProfileId =
         configuration.iosProvisionProfileId?.trim();
 
     if (csr != null && provisionProfileId != null) {
-      data =
-          await getAndInstallProvisionProfile(appId, provisionProfileId, csr);
+      data = await getExistingProvisionProfile(appId, provisionProfileId, csr);
     } else if (csr != null) {
       data = await createAndInstallProvisionProfile(appId, csr);
     } else {
@@ -91,17 +96,20 @@ class IosSetupExecutor extends SetupExecutor {
 
   ///
   @visibleForTesting
-  Future<_ProvisionProfileWithCertificateSha1> getAndInstallProvisionProfile(
+  Future<_ProvisionProfileWithCertificateSha1> getExistingProvisionProfile(
     String appId,
-    String provisionProfileID,
+    String provisionProfileId,
     CertificateSigningRequest csr,
   ) async {
+    logger.logInfo(
+      'Using existing Provision profile provided $provisionProfileId...',
+    );
     final ProvisionProfile? profile =
-        await profilesManager.getProfileWithID(provisionProfileID);
+        await profilesManager.getProfileWithID(provisionProfileId);
 
     if (profile == null) {
       throw UnrecoverableException(
-        'No provision profile found with uuid $provisionProfileID, '
+        'No provision profile found with uuid $provisionProfileId, '
         'in your available list of provision profiles',
         ExitCode.config.code,
       );
@@ -118,10 +126,19 @@ class IosSetupExecutor extends SetupExecutor {
       );
     }
 
+    logger.logInfo(
+      'Searching valid signing certificate in Provision profile ${profile.id}...',
+    );
+
     final Certificate? validCertificate =
         await profilesManager.getValidCertificate(profile);
 
     if (validCertificate != null) {
+      logger.logSuccess(
+        'Found valid signing certificate '
+        '${validCertificate.id} - ${validCertificate.name}',
+      );
+
       final bool isSignedByPrivateKey = await certificatesManager
           .isSignedWithPrivateKey(validCertificate, csr.privateKey);
 
@@ -141,13 +158,13 @@ class IosSetupExecutor extends SetupExecutor {
       }
 
       throw UnrecoverableException(
-        'Distribution certificate ${validCertificate.name} with id '
+        'Certificate ${validCertificate.name} with id '
         '${validCertificate.id} was not signed with ${csr.privateKey.path}',
         ExitCode.tempFail.code,
       );
     } else {
       throw UnrecoverableException(
-        'Provision profile with uuid $provisionProfileID does not have '
+        'Provision profile with id $provisionProfileId does not have '
         'usable distribution certificate\n'
         "Either create one in the developer portal or don't specify the "
         'provision profile, we will create a new provision profile.',
@@ -162,6 +179,8 @@ class IosSetupExecutor extends SetupExecutor {
     String appId,
     CertificateSigningRequest csr,
   ) async {
+    logger.logInfo('Creating new Provision profile for $appId');
+
     final BundleId bundleId = await bundleIdManager.getOrCreateBundleId(appId);
 
     final CertificateType certificateType =
@@ -175,11 +194,24 @@ class IosSetupExecutor extends SetupExecutor {
     final Certificate certificate;
 
     if (certificateSignedByKey?.type == certificateType) {
+      logger.logInfo(
+        'Found reusable ${certificateType.key} Certificate '
+        'signed with ${csr.privateKey.path}',
+      );
+
       certificate = certificateSignedByKey!;
     } else {
+      logger.logInfo(
+        'No reusable ${certificateType.key} Certificate found.\n'
+        'Creating new one signed with ${csr.privateKey.path}...',
+      );
       certificate = await certificatesManager.createCertificate(
         csr.request,
         certificateType,
+      );
+      logger.logSuccess(
+        '${certificate.type.key} Certificate '
+        '${certificate.id} - ${certificate.name} created.',
       );
     }
 
@@ -267,12 +299,20 @@ class IosSetupExecutor extends SetupExecutor {
     final String? csrEmail = configuration.iosCertificateSigningRequestEmail;
 
     if (csrName != null && csrEmail != null) {
+      logger.logInfo(
+        'Creating new CSR with name $csrName and email $csrEmail...',
+      );
+
       return certificatesManager.createCertificateSigningRequest(
         configuration.iosAppId,
         csrEmail,
         csrName,
       );
     }
+
+    logger.logError(
+      'Could not create CSR with name $csrName and email $csrEmail.',
+    );
 
     return null;
   }

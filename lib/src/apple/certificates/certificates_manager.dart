@@ -71,7 +71,8 @@ class CertificatesManager {
     importCertificateFileLocally(certificateFile);
 
     logger.logSuccess(
-      'Added certificate ${certificate.id} of type ${certificate.type} locally',
+      'Added certificate ${certificate.id} - ${certificate.name} '
+      'of type ${certificate.type} locally',
     );
 
     return _keychainsManager.getCertificateSha1Hash(certificate.serialNumber);
@@ -98,7 +99,8 @@ class CertificatesManager {
       if (certificate.isDistribution()) {
         await _api.delete(certificate.id);
         logger.logSuccess(
-          'Deleted certificate ${certificate.id} of type ${certificate.type}',
+          'Deleted certificate ${certificate.id} - ${certificate.name} '
+          'of type ${certificate.type}',
         );
       }
     });

@@ -197,6 +197,7 @@ class InfraSetupCommand extends BaseCommand {
       certificatesManager: certificatesManager,
       bundleIdManager: bundleIdManager,
       deviceManager: deviceManager,
+      logger: logger,
     );
 
     logger.logInfo(
@@ -222,7 +223,7 @@ class InfraSetupCommand extends BaseCommand {
 
     logger.logInfo(
       'Set up ios infrastructure for ${configuration.iosAppId} '
-      'completed:${configurationFile.path}',
+      'completed: ${configurationFile.path}',
     );
 
     await cleanup(configuration, infraDir);
