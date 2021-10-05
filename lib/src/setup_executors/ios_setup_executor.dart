@@ -63,6 +63,8 @@ class IosSetupExecutor extends SetupExecutor {
     final String? provisionProfileId =
         configuration.iosProvisionProfileId?.trim();
 
+    logger.logInfo('IOS PROVISION PROFILE ID $provisionProfileId');
+
     if (csr != null && provisionProfileId != null) {
       data = await getExistingProvisionProfile(appId, provisionProfileId, csr);
     } else if (csr != null) {
@@ -70,9 +72,7 @@ class IosSetupExecutor extends SetupExecutor {
     } else {
       csr = createCertificateSigningRequestFile();
 
-      if (csr != null) {
-        data = await createAndInstallProvisionProfile(appId, csr);
-      }
+      data = await createAndInstallProvisionProfile(appId, csr);
     }
 
     if (csr != null && data != null) {
@@ -302,27 +302,15 @@ class IosSetupExecutor extends SetupExecutor {
 
   ///
   @visibleForTesting
-  CertificateSigningRequest? createCertificateSigningRequestFile() {
+  CertificateSigningRequest createCertificateSigningRequestFile() {
     final String? csrName = configuration.iosCertificateSigningRequestName;
     final String? csrEmail = configuration.iosCertificateSigningRequestEmail;
 
-    if (csrName != null && csrEmail != null) {
-      logger.logInfo(
-        'Creating new CSR with name $csrName and email $csrEmail...',
-      );
-
-      return certificatesManager.createCertificateSigningRequest(
-        configuration.iosAppId,
-        csrEmail,
-        csrName,
-      );
-    }
-
-    logger.logError(
-      'Could not create CSR with name $csrName and email $csrEmail.',
+    return certificatesManager.createCertificateSigningRequest(
+      configuration.iosAppId,
+      csrEmail,
+      csrName,
     );
-
-    return null;
   }
 
   InfraBuildConfiguration _createBuildConfiguration(
