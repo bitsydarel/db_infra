@@ -98,7 +98,7 @@ class FtpStorage extends Storage {
 
     final File localZipFile = File(
       path.join(localDirectory.path, _getZipFileName()),
-    )..createSync(recursive: true);
+    )..createSync();
 
     final List<String> directoryPaths = path.split(serverFolderName);
 
@@ -106,17 +106,24 @@ class FtpStorage extends Storage {
       await _changeDirectory(directoryPath);
     }
 
-    await _ftpConnection.downloadFileWithRetry(
+    final String zipFileName = _getZipFileName();
+
+    final bool fileDownloaded = await _ftpConnection.downloadFileWithRetry(
       _getZipFileName(),
       localZipFile,
       pRetryCount: 3,
     );
 
+    if (!fileDownloaded) {
+      throw UnrecoverableException(
+        'Could not download file $zipFileName from FTP',
+        ExitCode.tempFail.code,
+      );
+    }
+
     await _ftpConnection.disconnect();
 
     await FTPConnect.unZipFile(localZipFile, localDirectory.path);
-
-    localZipFile.deleteSync(recursive: true);
 
     return localDirectory
         .listSync(recursive: true)
@@ -154,9 +161,17 @@ class FtpStorage extends Storage {
       );
     }
 
-    _ftpConnection.uploadFile(zipFile);
+    final bool fileUploaded =
+        await _ftpConnection.uploadFileWithRetry(zipFile, pRetryCount: 3);
 
-    logger.logSuccess('File uploads completed.');
+    if (fileUploaded) {
+      logger.logSuccess('File uploads completed.');
+    } else {
+      throw UnrecoverableException(
+        'Could not upload to ftp server ${zipFile.path}',
+        ExitCode.tempFail.code,
+      );
+    }
   }
 
   Future<void> _changeDirectory(String directory) async {

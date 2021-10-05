@@ -100,6 +100,8 @@ class InfraBuildCommand extends BaseCommand {
     ).build();
 
     await buildDistributor.distribute(iosFlutterOutput);
+
+    await cleanup(buildConfiguration, infraDir);
   }
 
   /// Get the build distributor

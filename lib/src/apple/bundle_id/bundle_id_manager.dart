@@ -42,4 +42,9 @@ class BundleIdManager {
   Future<List<BundleId>> getAll() {
     return _api.getAll();
   }
+
+  ///
+  bool isBundleIdForApp(final BundleId bundleId, final String appId) {
+    return RegExp(bundleId.identifier).stringMatch(appId) == appId;
+  }
 }

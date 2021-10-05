@@ -63,8 +63,6 @@ class IosSetupExecutor extends SetupExecutor {
     final String? provisionProfileId =
         configuration.iosProvisionProfileId?.trim();
 
-    logger.logInfo('IOS PROVISION PROFILE ID $provisionProfileId');
-
     if (csr != null && provisionProfileId != null) {
       data = await getExistingProvisionProfile(appId, provisionProfileId, csr);
     } else if (csr != null) {
@@ -126,7 +124,8 @@ class IosSetupExecutor extends SetupExecutor {
     final BundleId? bundleId =
         await bundleIdManager.getBundleId(profile.bundleId.id);
 
-    if (bundleId != null && bundleId.identifier != appId) {
+    if (bundleId != null &&
+        !bundleIdManager.isBundleIdForApp(bundleId, appId)) {
       throw UnrecoverableException(
         'The specified provision profile is bundle id does not match '
         'the current project appId\n${bundleId.identifier} != $appId',

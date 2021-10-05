@@ -85,7 +85,7 @@ class ProvisionProfileManager {
     if (provisionProfileDirectory != null) {
       File(
         path.join(provisionProfileDirectory, '${profile.uuid}.mobileprovision'),
-      ).deleteSync(recursive: true);
+      ).deleteSync();
     } else {
       throw UnrecoverableException(
         'HOME environment argument is not set',
