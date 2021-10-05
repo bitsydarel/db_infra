@@ -85,6 +85,14 @@ class IosSetupExecutor extends SetupExecutor {
       certificatesManager.cleanupLocally();
 
       return buildConfiguration;
+    } else {
+      logger.logError(
+        'CSR and Private Key could not be found or created.\n'
+        'CSR Private Key provided: '
+        '${configuration.iosCertificateSigningRequestPrivateKeyPath}\n'
+        'CSR Name: ${configuration.iosCertificateSigningRequestName}\n'
+        'CSR Email: ${configuration.iosCertificateSigningRequestEmail}',
+      );
     }
 
     throw UnrecoverableException(
@@ -102,14 +110,14 @@ class IosSetupExecutor extends SetupExecutor {
     CertificateSigningRequest csr,
   ) async {
     logger.logInfo(
-      'Using existing Provision profile provided $provisionProfileId...',
+      'Using existing Provision Profile provided $provisionProfileId...',
     );
     final ProvisionProfile? profile =
         await profilesManager.getProfileWithID(provisionProfileId);
 
     if (profile == null) {
       throw UnrecoverableException(
-        'No provision profile found with uuid $provisionProfileId, '
+        'No Provision Profile found with id $provisionProfileId, '
         'in your available list of provision profiles',
         ExitCode.config.code,
       );
@@ -127,7 +135,7 @@ class IosSetupExecutor extends SetupExecutor {
     }
 
     logger.logInfo(
-      'Searching valid signing certificate in Provision profile ${profile.id}...',
+      'Searching valid signing certificate in Provision profile ${profile.id}',
     );
 
     final Certificate? validCertificate =
