@@ -5,7 +5,7 @@ import 'package:args/command_runner.dart';
 import 'package:db_infra/db_infra.dart';
 import 'package:io/io.dart';
 
-void main(List<String> arguments) {
+Future<void> main(List<String> arguments) async {
   final CommandRunner<void> commandRunner = CommandRunner<void>(
     'db_infra',
     'A command-line tool that help to automate your release workflow',
@@ -27,7 +27,7 @@ void main(List<String> arguments) {
     ..addCommand(InfraSetupCommand())
     ..addCommand(InfraBuildCommand());
 
-  runZonedGuarded<void>(
+  await runZonedGuarded<Future<void>>(
     () => commandRunner.run(arguments),
     (Object error, StackTrace history) {
       stderr
@@ -43,4 +43,6 @@ void main(List<String> arguments) {
       }
     },
   );
+
+  exit(ExitCode.success.code);
 }
