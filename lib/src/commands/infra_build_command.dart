@@ -8,7 +8,7 @@ import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.d
 import 'package:db_infra/src/build_distributor.dart';
 import 'package:db_infra/src/build_distributor_type.dart';
 import 'package:db_infra/src/build_distributors/build_distributor_factory.dart';
-import 'package:db_infra/src/build_executors/flutter_ios_build_executor.dart';
+import 'package:db_infra/src/build_executors/ios/flutter_ios_build_executor.dart';
 import 'package:db_infra/src/commands/base_command.dart';
 import 'package:db_infra/src/configurations/infra_build_configuration.dart';
 import 'package:db_infra/src/logger.dart';

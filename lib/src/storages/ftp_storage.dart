@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:db_infra/db_infra.dart';
 import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/storage.dart';
+import 'package:db_infra/src/utils/file_utils.dart';
 import 'package:db_infra/src/utils/types.dart';
 import 'package:ftpconnect/ftpconnect.dart';
 import 'package:io/io.dart';
@@ -94,7 +95,7 @@ class FtpStorage extends Storage {
 
     final Directory localDirectory = Directory(
       path.join(infraDirectory.path, 'data'),
-    );
+    )..createSync(recursive: true);
 
     final File localZipFile = File(
       path.join(localDirectory.path, _getZipFileName()),
@@ -125,10 +126,17 @@ class FtpStorage extends Storage {
 
     await FTPConnect.unZipFile(localZipFile, localDirectory.path);
 
-    return localDirectory
+    localZipFile.deleteSync();
+
+    final List<File> downloadedFiles = localDirectory
         .listSync(recursive: true)
         .map((FileSystemEntity fileSystemEntity) => File(fileSystemEntity.path))
+        .map(infraDirectory.copyFile)
         .toList();
+
+    localDirectory.deleteSync(recursive: true);
+
+    return downloadedFiles;
   }
 
   @override

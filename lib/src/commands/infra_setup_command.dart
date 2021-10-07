@@ -222,7 +222,7 @@ class InfraSetupCommand extends BaseCommand {
     await saveConfiguration(buildConfiguration, configurationFile);
 
     logger.logInfo(
-      'Set up ios infrastructure for ${configuration.iosAppId} '
+      'Completed set up ios infrastructure for ${configuration.iosAppId} '
       'completed: ${configurationFile.path}',
     );
 

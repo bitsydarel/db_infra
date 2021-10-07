@@ -5,6 +5,7 @@ import 'package:db_infra/src/apple/certificates/certificate.dart';
 import 'package:db_infra/src/apple/certificates/certificates_manager.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.dart';
+import 'package:db_infra/src/apple/xcode_project/xcode_project.dart';
 import 'package:db_infra/src/build_executor.dart';
 import 'package:db_infra/src/build_output_type.dart';
 import 'package:db_infra/src/configurations/infra_build_configuration.dart';
@@ -63,13 +64,13 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       );
     }
 
-    final ProvisionProfile? profile =
+    final ProvisionProfile? provisionProfile =
         await provisionProfilesManager.getProfileWithID(
       configuration.iosProvisionProfileId,
     );
 
-    if (profile != null) {
-      provisionProfilesManager.importProvisionProfileLocally(profile);
+    if (provisionProfile != null) {
+      provisionProfilesManager.importProvisionProfileLocally(provisionProfile);
     } else {
       throw UnrecoverableException(
         'Provision Profile with uuid '
@@ -78,6 +79,16 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         ExitCode.tempFail.code,
       );
     }
+
+    final File xcodeProject = File(
+      path.join(projectDirectory.path, 'ios/Runner.xcodeproj/project.pbxproj'),
+    );
+
+    updateXcodeProjectSigningConfiguration(
+      xcodeProject,
+      provisionProfile,
+      certificate,
+    );
 
     final String oldPath = path.canonicalize(Directory.current.path);
     final String projectDir = path.canonicalize(projectDirectory.path);
@@ -98,7 +109,9 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     Directory.current = oldPath;
 
     if (output.stderr.isNotEmpty) {
-      logger.logError(output.stderr);
+      logger
+        ..logInfo(output.stdout)
+        ..logError(output.stderr);
       throw UnrecoverableException(output.stderr, ExitCode.tempFail.code);
     }
 
@@ -109,7 +122,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       throw UnrecoverableException('Could not find ', ExitCode.software.code);
     }
 
-    provisionProfilesManager.deleteProvisionProfileLocally(profile);
+    provisionProfilesManager.deleteProvisionProfileLocally(provisionProfile);
     certificatesManager.cleanupLocally();
 
     return outputFile;
