@@ -62,7 +62,12 @@ class ProvisionProfileManager {
     if (provisionProfileDirectory != null) {
       File(
         path.join(provisionProfileDirectory, '${profile.uuid}.mobileprovision'),
-      ).writeAsBytesSync(base64.decode(profile.content), flush: true);
+      )
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(
+          base64.decode(profile.content),
+          flush: true,
+        );
     } else {
       throw UnrecoverableException(
         'HOME environment argument is not set',
