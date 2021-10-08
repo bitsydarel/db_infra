@@ -40,15 +40,16 @@ class ProvisionProfileManager {
     this.runner = const ShellRunner(),
   });
 
-  String? _getLocalProfileDirectory() {
+  Directory? _getLocalProfileDirectory() {
     final String? homeDir = Platform.environment['HOME'];
 
     if (homeDir == null || homeDir.trim().isEmpty) {
       return null;
     }
 
-    return path.join(
-        homeDir, 'Library', 'MobileDevice', 'Provisioning Profiles');
+    return Directory(
+      path.join(homeDir, 'Library', 'MobileDevice', 'Provisioning Profiles'),
+    )..createSync(recursive: true);
   }
 
   ///
@@ -57,17 +58,15 @@ class ProvisionProfileManager {
       'Adding Provision profile ${profile.name} - ${profile.uuid} locally...',
     );
 
-    final String? provisionProfileDirectory = _getLocalProfileDirectory();
+    final Directory? provisionProfileDirectory = _getLocalProfileDirectory();
 
     if (provisionProfileDirectory != null) {
       File(
-        path.join(provisionProfileDirectory, '${profile.uuid}.mobileprovision'),
-      )
-        ..createSync(recursive: true)
-        ..writeAsBytesSync(
-          base64.decode(profile.content),
-          flush: true,
-        );
+        path.join(
+          provisionProfileDirectory.path,
+          '${profile.uuid}.mobileprovision',
+        ),
+      ).writeAsBytesSync(base64.decode(profile.content), flush: true);
     } else {
       throw UnrecoverableException(
         'HOME environment argument is not set',
@@ -85,11 +84,15 @@ class ProvisionProfileManager {
     logger.logInfo(
       'Removing Provision Profile ${profile.name} - ${profile.uuid} locally...',
     );
-    final String? provisionProfileDirectory = _getLocalProfileDirectory();
+
+    final Directory? provisionProfileDirectory = _getLocalProfileDirectory();
 
     if (provisionProfileDirectory != null) {
       File(
-        path.join(provisionProfileDirectory, '${profile.uuid}.mobileprovision'),
+        path.join(
+          provisionProfileDirectory.path,
+          '${profile.uuid}.mobileprovision',
+        ),
       ).deleteSync();
     } else {
       throw UnrecoverableException(
