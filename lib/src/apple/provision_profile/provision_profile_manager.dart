@@ -158,7 +158,7 @@ class ProvisionProfileManager {
       ..writeln('<key>provisioningProfiles</key>')
       ..writeln('<dict>')
       ..writeln('<key>$appId</key>')
-      ..writeln('<string>${provisionProfile.uuid}</string>')
+      ..writeln('<string>${provisionProfile.name}</string>')
       ..writeln('</dict>');
 
     if (certificateSha1 != null) {

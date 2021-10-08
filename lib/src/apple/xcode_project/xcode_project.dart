@@ -2,109 +2,75 @@ import 'dart:io';
 
 import 'package:db_infra/src/apple/certificates/certificate.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
-import 'package:db_infra/src/apple/xcode_project/xcode_build_settings.dart';
-
-final RegExp _indentationMatcher = RegExp(r'(^.\s+)');
+import 'package:path/path.dart' as path;
 
 ///
-void updateXcodeProjectSigningConfiguration(
-  final File xcodeProject,
+const String codeSignIdentityKey = 'CODE_SIGN_IDENTITY';
+
+///
+const String codeSignStyleKey = 'CODE_SIGN_STYLE';
+
+///
+const String provisionProfileKey = 'PROVISIONING_PROFILE';
+
+///
+const String provisioningProfileSpecifierKey = 'PROVISIONING_PROFILE_SPECIFIER';
+
+///
+File createCodeSigningXCConfig(
+  Directory parentDirectory,
   ProvisionProfile provisionProfile,
   Certificate certificate,
 ) {
-  final List<String> lines = xcodeProject.readAsLinesSync();
+  final File xcConfigFile = File(
+    path.join(parentDirectory.path, 'Infra.xcconfig'),
+  );
 
-  final int buildSettingsStart =
-      _getFirstLineThatContains('Begin XCBuildConfiguration section', lines);
+  final List<String> newConfig = <String>[
+    '$codeSignIdentityKey = "${certificate.name}"',
+    '$codeSignStyleKey = Manual',
+    '$provisionProfileKey = ${provisionProfile.uuid}',
+    '$provisioningProfileSpecifierKey = "${provisionProfile.name}"',
+  ];
 
-  final int buildSettingsEnd =
-      _getFirstLineThatContains('End XCBuildConfiguration section', lines);
+  xcConfigFile.writeAsStringSync(newConfig.join('\n'), flush: true);
 
-  for (int ln = buildSettingsStart; ln < buildSettingsEnd; ln++) {
-    final String previousLine = lines[ln - 1];
-    final String currentLine = lines[ln];
-    final String nextLine = lines[ln + 1];
-
-    final bool isSettingStart = currentLine.contains(buildSettingsStartKey);
-
-    final bool isExtendedSettingStart =
-        previousLine.contains(baseConfigurationReferenceKey);
-
-    if (isSettingStart && isExtendedSettingStart) {
-      final String indentation =
-          _indentationMatcher.stringMatch(nextLine) ?? '';
-
-      final Map<String, int> configs = getCodeSigningSettings(ln, lines);
-
-      final int startLineNumber = configs[buildSettingsStartKey]!;
-      final int endLineNumber = configs[buildSettingsEndKey]!;
-
-      updateConfigs(
-        startLineNumber,
-        certificate.name,
-        provisionProfile.uuid,
-        provisionProfile.name,
-        indentation,
-        lines,
-        configs,
-      );
-
-      ln = endLineNumber + 1;
-    }
-  }
-
-  xcodeProject.writeAsStringSync(lines.join('\n'), flush: true);
-}
-
-int _getFirstLineThatContains(String match, List<String> lines) {
-  return lines.indexWhere((String line) => line.contains(match));
+  return xcConfigFile;
 }
 
 ///
-void updateConfigs(
-  int startLineNumber,
-  String certificateName,
-  String provisionProfileUuid,
-  String provisionProfileName,
-  String indentation,
-  List<String> lines,
-  Map<String, int> configs,
+void updateProjectSigningConfiguration(
+  final File codeSigningConfig,
+  final File releaseConfig,
 ) {
-  void handle(MapEntry<String, int> entry) {
-    final String key = entry.key;
-    final int lineNumber = entry.value;
-    String value = '';
+  final String filename = path.basename(codeSigningConfig.path);
 
-    switch (key) {
-      case codeSignIdentityKey:
-        value = '$indentation$codeSignIdentityKey = "$certificateName";';
-        break;
-      case codeSignStyleKey:
-        value = '$indentation$codeSignStyleKey = Manual;';
-        break;
-      case provisionProfileKey:
-        value = '$indentation$provisionProfileKey = $provisionProfileUuid;';
-        break;
-      case provisioningProfileSpecifierKey:
-        value = '$indentation$provisioningProfileSpecifierKey = '
-            '"$provisionProfileName";';
-        break;
-    }
+  final String importStatement = '#include? "$filename"';
 
-    if (value.isNotEmpty) {
-      if (lineNumber > startLineNumber) {
-        lines[lineNumber] = value;
-      } else {
-        lines.insert(lineNumber, value);
-      }
-    }
-  }
+  final List<String> releaseConfigLines = releaseConfig.readAsLinesSync();
 
-  configs.entries.where((MapEntry<String, int> entry) {
-    return entry.value > startLineNumber;
-  }).forEach(handle);
+  releaseConfig.writeAsStringSync(
+    <String>[
+      ...releaseConfig.readAsLinesSync(),
+      if (!releaseConfigLines.contains(importStatement)) importStatement,
+    ].join('\n'),
+    mode: FileMode.writeOnly,
+    flush: true,
+  );
+}
 
-  configs.entries.where((MapEntry<String, int> entry) {
-    return entry.value < startLineNumber;
-  }).forEach(handle);
+///
+void cleanupProjectSigningConfiguration(
+  final File codeSigningConfig,
+  final File releaseConfig,
+) {
+  final String filename = path.basename(codeSigningConfig.path);
+
+  final List<String> lines = releaseConfig.readAsLinesSync().where(
+    (String line) {
+      return !line.contains(filename);
+    },
+  ).toList();
+
+  releaseConfig.writeAsStringSync(lines.join('\n'), flush: true);
 }

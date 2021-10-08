@@ -9,13 +9,18 @@ class ShellRunner {
   const ShellRunner();
 
   ///
-  ShellOutput execute(String command, List<String> arguments) {
+  ShellOutput execute(
+    String command,
+    List<String> arguments, [
+    Map<String, String>? environment,
+  ]) {
     final ProcessResult result = Process.runSync(
       command,
       arguments,
       runInShell: true,
       stdoutEncoding: utf8,
       stderrEncoding: utf8,
+      environment: environment,
     );
 
     return ShellOutput(

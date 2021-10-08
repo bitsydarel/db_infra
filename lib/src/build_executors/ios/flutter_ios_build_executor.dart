@@ -80,15 +80,25 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       );
     }
 
-    final File xcodeProject = File(
-      path.join(projectDirectory.path, 'ios/Runner.xcodeproj/project.pbxproj'),
+    if (!configuration.iosExportOptionsPlist.existsSync()) {
+      throw UnrecoverableException(
+        'File ${configuration.iosExportOptionsPlist.path} does not exist',
+        ExitCode.tempFail.code,
+      );
+    }
+
+    final Directory iosFlutterDir = Directory(
+      path.join(projectDirectory.path, 'ios/Flutter'),
     );
 
-    updateXcodeProjectSigningConfiguration(
-      xcodeProject,
-      provisionProfile,
-      certificate,
+    final File codeSigningConfig =
+        createCodeSigningXCConfig(iosFlutterDir, provisionProfile, certificate);
+
+    final File releaseConfig = File(
+      path.join(iosFlutterDir.path, 'Release.xcconfig'),
     );
+
+    updateProjectSigningConfiguration(codeSigningConfig, releaseConfig);
 
     final String oldPath = path.canonicalize(Directory.current.path);
     final String projectDir = path.canonicalize(projectDirectory.path);
@@ -103,10 +113,13 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         '--release',
         '--export-options-plist',
         configuration.iosExportOptionsPlist.path,
+        '-v'
       ],
     );
 
     Directory.current = oldPath;
+
+    cleanupProjectSigningConfiguration(codeSigningConfig, releaseConfig);
 
     if (output.stderr.isNotEmpty) {
       logger
