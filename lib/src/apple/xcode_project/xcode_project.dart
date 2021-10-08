@@ -27,10 +27,10 @@ File createCodeSigningXCConfig(
   );
 
   final List<String> newConfig = <String>[
-    '$codeSignIdentityKey = "${certificate.name}"',
-    '$codeSignStyleKey = Manual',
-    '$provisionProfileKey = ${provisionProfile.uuid}',
-    '$provisioningProfileSpecifierKey = "${provisionProfile.name}"',
+    '$codeSignIdentityKey=${certificate.name}',
+    '$codeSignStyleKey=Manual',
+    '$provisionProfileKey=${provisionProfile.uuid}',
+    '$provisioningProfileSpecifierKey=${provisionProfile.name}',
   ];
 
   xcConfigFile.writeAsStringSync(newConfig.join('\n'), flush: true);
