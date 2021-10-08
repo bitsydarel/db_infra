@@ -113,7 +113,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         '--release',
         '--export-options-plist',
         configuration.iosExportOptionsPlist.path,
-        '-v'
       ],
     );
 
