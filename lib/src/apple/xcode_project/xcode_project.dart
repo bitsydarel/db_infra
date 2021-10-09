@@ -73,4 +73,6 @@ void cleanupProjectSigningConfiguration(
   ).toList();
 
   releaseConfig.writeAsStringSync(lines.join('\n'), flush: true);
+
+  codeSigningConfig.deleteSync();
 }
