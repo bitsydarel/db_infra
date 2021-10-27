@@ -49,7 +49,7 @@ const String iosCertificateSigningRequestEmailArg = 'ios-csr-email';
 const String iosCertificateSigningRequestNameArg = 'ios-csr-name';
 
 /// iOS provision profile id.
-const String iosProvisionProfileIdArg = 'ios-provision-profile-id';
+const String iosProvisionProfileNameArg = 'ios-provision-profile-name';
 
 /// iOS provision profile type.
 const String iosProvisionProfileTypeArg = 'ios-provision-profile-type';

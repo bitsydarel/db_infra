@@ -65,8 +65,8 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     }
 
     final ProvisionProfile? provisionProfile =
-        await provisionProfilesManager.getProfileWithID(
-      configuration.iosProvisionProfileId,
+        await provisionProfilesManager.getProfileWithName(
+      configuration.iosProvisionProfileName,
     );
 
     if (provisionProfile != null) {
@@ -74,7 +74,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     } else {
       throw UnrecoverableException(
         'Provision Profile with uuid '
-        '${configuration.iosProvisionProfileId} not found.\n'
+        '${configuration.iosProvisionProfileName} not found.\n'
         'Re-Run the setup command.',
         ExitCode.tempFail.code,
       );

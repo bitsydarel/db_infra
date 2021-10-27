@@ -60,11 +60,12 @@ class IosSetupExecutor extends SetupExecutor {
 
     CertificateSigningRequest? csr = getCertificateSigningRequestFile();
 
-    final String? provisionProfileId =
-        configuration.iosProvisionProfileId?.trim();
+    final String? provisionProfileName =
+        configuration.iosProvisionProfileName?.trim();
 
-    if (csr != null && provisionProfileId != null) {
-      data = await getExistingProvisionProfile(appId, provisionProfileId, csr);
+    if (csr != null && provisionProfileName != null) {
+      data =
+          await getExistingProvisionProfile(appId, provisionProfileName, csr);
     } else if (csr != null) {
       data = await createAndInstallProvisionProfile(appId, csr);
     } else {
@@ -73,49 +74,44 @@ class IosSetupExecutor extends SetupExecutor {
       data = await createAndInstallProvisionProfile(appId, csr);
     }
 
-    if (csr != null && data != null) {
-      final File exportOptionsPlist = profilesManager
-          .exportOptionsPlist(appId, data.profile, certificateSha1: data.sha1);
-
-      final InfraBuildConfiguration buildConfiguration =
-          _createBuildConfiguration(csr, data, exportOptionsPlist);
-
-      certificatesManager.cleanupLocally();
-
-      return buildConfiguration;
-    } else {
-      logger.logError(
+    if (csr == null || data == null) {
+      throw UnrecoverableException(
         'CSR and Private Key could not be found or created.\n'
         'CSR Private Key provided: '
         '${configuration.iosCertificateSigningRequestPrivateKeyPath}\n'
         'CSR Name: ${configuration.iosCertificateSigningRequestName}\n'
         'CSR Email: ${configuration.iosCertificateSigningRequestEmail}',
+        ExitCode.config.code,
       );
     }
 
-    throw UnrecoverableException(
-      'Could not find or create Certificate signing request, '
-      'please provide one or specify email and name tto be used',
-      ExitCode.tempFail.code,
-    );
+    final File exportOptionsPlist = profilesManager
+        .exportOptionsPlist(appId, data.profile, certificateSha1: data.sha1);
+
+    final InfraBuildConfiguration buildConfiguration =
+        _createBuildConfiguration(csr, data, exportOptionsPlist);
+
+    certificatesManager.cleanupLocally();
+
+    return buildConfiguration;
   }
 
   ///
   @visibleForTesting
   Future<_ProvisionProfileWithCertificateSha1> getExistingProvisionProfile(
     String appId,
-    String provisionProfileId,
+    String provisionProfileName,
     CertificateSigningRequest csr,
   ) async {
     logger.logInfo(
-      'Using existing Provision Profile provided $provisionProfileId...',
+      'Using existing Provision Profile provided $provisionProfileName...',
     );
     final ProvisionProfile? profile =
-        await profilesManager.getProfileWithID(provisionProfileId);
+        await profilesManager.getProfileWithName(provisionProfileName);
 
     if (profile == null) {
       throw UnrecoverableException(
-        'No Provision Profile found with id $provisionProfileId, '
+        'No Provision Profile found with id $provisionProfileName, '
         'in your available list of provision profiles',
         ExitCode.config.code,
       );
@@ -134,7 +130,8 @@ class IosSetupExecutor extends SetupExecutor {
     }
 
     logger.logInfo(
-      'Searching valid signing certificate in Provision profile ${profile.id}',
+      'Searching valid signing certificate '
+      'for Provision profile ${profile.name}',
     );
 
     final Certificate? validCertificate =
@@ -171,7 +168,7 @@ class IosSetupExecutor extends SetupExecutor {
       );
     } else {
       throw UnrecoverableException(
-        'Provision profile with id $provisionProfileId does not have '
+        'Provision profile with id $provisionProfileName does not have '
         'usable distribution certificate\n'
         "Either create one in the developer portal or don't specify the "
         'provision profile, we will create a new provision profile.',
@@ -329,7 +326,7 @@ class IosSetupExecutor extends SetupExecutor {
           configuration.iosCertificateSigningRequestName,
       iosCertificateSigningRequestEmail:
           configuration.iosCertificateSigningRequestEmail,
-      iosProvisionProfileId: profileData.profile.id,
+      iosProvisionProfileName: profileData.profile.name,
       iosProvisionProfileType: profileData.profile.type,
       iosCertificateId: profileData.profile.certificates.first.id,
       iosExportOptionsPlist: exportOptionsPlist,

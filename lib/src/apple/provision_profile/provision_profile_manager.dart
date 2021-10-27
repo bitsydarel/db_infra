@@ -107,11 +107,11 @@ class ProvisionProfileManager {
   }
 
   ///
-  Future<ProvisionProfile?> getProfileWithID(final String id) async {
+  Future<ProvisionProfile?> getProfileWithName(final String name) async {
     final List<ProvisionProfile> profiles = await _api.getAll();
 
     for (final ProvisionProfile profile in profiles) {
-      if (profile.id == id) {
+      if (profile.name == name) {
         return profile;
       }
     }

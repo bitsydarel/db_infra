@@ -88,8 +88,8 @@ class InfraSetupCommand extends BaseCommand {
             '\nWill be used to create a new CSR',
       )
       ..addOption(
-        iosProvisionProfileIdArg,
-        help: 'Specify the distribution provision profile id to use.',
+        iosProvisionProfileNameArg,
+        help: "Specify the provision profile name, so it's can be used.",
       )
       ..addOption(
         iosProvisionProfileTypeArg,
@@ -309,25 +309,25 @@ class InfraSetupCommand extends BaseCommand {
       '$iOSAppId-csr',
     );
 
-    final String? iosProvisionProfileId =
-        commandArgs.parseOptionalString(iosProvisionProfileIdArg);
+    final String? iosProvisionProfileName =
+        commandArgs.parseOptionalString(iosProvisionProfileNameArg);
 
     final String? iosCertificateId =
         commandArgs.parseOptionalString(iosCertificateIdArg);
 
-    if (iosProvisionProfileId != null && iosCSRPrivateKeyPath == null) {
+    if (iosProvisionProfileName != null && iosCSRPrivateKeyPath == null) {
       throw const FormatException(
-        '$iosProvisionProfileIdArg cannot be specified without '
+        '$iosProvisionProfileNameArg cannot be specified without '
         'providing ($iosCertificateSigningRequestPrivateKeyPathArg or '
         "$iosCertificateSigningRequestPrivateKeyBase64Arg)\nBecause it's "
         'needed to use the distribution certificate for code signing.',
       );
     }
 
-    if (iosCertificateId != null && iosProvisionProfileId == null) {
+    if (iosCertificateId != null && iosProvisionProfileName == null) {
       throw const FormatException(
         '$iosCertificateIdArg cannot be specified without '
-        'providing $iosProvisionProfileIdArg where this '
+        'providing $iosProvisionProfileNameArg where this '
         'certificate is associated.',
       );
     }
@@ -366,7 +366,7 @@ class InfraSetupCommand extends BaseCommand {
       iosCertificateSigningRequestPrivateKeyPath: iosCSRPrivateKeyPath,
       iosCertificateSigningRequestEmail: iosCSREmail,
       iosCertificateSigningRequestName: iosCSRName,
-      iosProvisionProfileId: iosProvisionProfileId,
+      iosProvisionProfileName: iosProvisionProfileName,
       iosProvisionProfileType: iosProvisionProfileType.fromKey(),
       iosCertificateId: iosCertificateId,
       encryptorType: infraEncryptorType,

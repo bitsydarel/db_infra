@@ -23,7 +23,7 @@ class InfraSetupConfiguration extends RunConfiguration {
   final String? iosCertificateSigningRequestEmail;
 
   ///
-  final String? iosProvisionProfileId;
+  final String? iosProvisionProfileName;
 
   ///
   final String? iosCertificateId;
@@ -46,7 +46,7 @@ class InfraSetupConfiguration extends RunConfiguration {
     this.iosCertificateSigningRequestPath,
     this.iosCertificateSigningRequestName,
     this.iosCertificateSigningRequestEmail,
-    this.iosProvisionProfileId,
+    this.iosProvisionProfileName,
     this.iosCertificateId,
   }) : super(
           androidAppId: androidAppId,

@@ -31,7 +31,7 @@ class InfraBuildConfiguration extends RunConfiguration {
   final String? iosCertificateSigningRequestEmail;
 
   ///
-  final String iosProvisionProfileId;
+  final String iosProvisionProfileName;
 
   ///
   final String iosCertificateId;
@@ -57,7 +57,7 @@ class InfraBuildConfiguration extends RunConfiguration {
     required this.iosCertificateSigningRequestPrivateKey,
     required this.iosCertificateSigningRequestName,
     required this.iosCertificateSigningRequestEmail,
-    required this.iosProvisionProfileId,
+    required this.iosProvisionProfileName,
     required this.iosCertificateId,
     required this.iosExportOptionsPlist,
   }) : super(
@@ -104,7 +104,7 @@ class InfraBuildConfiguration extends RunConfiguration {
     final Object? iosCertificateSigningRequestEmail =
         json[iosCertificateSigningRequestEmailArg];
 
-    final Object? iosProvisionProfileId = json[iosProvisionProfileIdArg];
+    final Object? iosProvisionProfileName = json[iosProvisionProfileNameArg];
 
     final Object? iosProvisionProfileType = json[iosProvisionProfileTypeArg];
 
@@ -162,9 +162,9 @@ class InfraBuildConfiguration extends RunConfiguration {
           iosCertificateSigningRequestEmail is String
               ? iosCertificateSigningRequestEmail
               : null,
-      iosProvisionProfileId: iosProvisionProfileId is String
-          ? iosProvisionProfileId
-          : throw ArgumentError(iosProvisionProfileId),
+      iosProvisionProfileName: iosProvisionProfileName is String
+          ? iosProvisionProfileName
+          : throw ArgumentError(iosProvisionProfileName),
       iosProvisionProfileType: iosProvisionProfileType is String
           ? iosProvisionProfileType.fromKey()
           : throw ArgumentError(iosProvisionProfileType),
@@ -204,7 +204,7 @@ class InfraBuildConfiguration extends RunConfiguration {
           path.basename(iosCertificateSigningRequestPrivateKey.path),
       iosCertificateSigningRequestNameArg: iosCertificateSigningRequestName,
       iosCertificateSigningRequestEmailArg: iosCertificateSigningRequestEmail,
-      iosProvisionProfileIdArg: iosProvisionProfileId,
+      iosProvisionProfileNameArg: iosProvisionProfileName,
       iosProvisionProfileTypeArg: iosProvisionProfileType.key,
       iosCertificateIdArg: iosCertificateId,
       'iosExportOptionsPlist': path.basename(iosExportOptionsPlist.path),
