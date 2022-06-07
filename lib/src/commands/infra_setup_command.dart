@@ -9,18 +9,12 @@ import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.d
 import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/build_output_type.dart';
 import 'package:db_infra/src/commands/base_command.dart';
-import 'package:db_infra/src/configurations/infra_build_configuration.dart';
-import 'package:db_infra/src/configurations/infra_setup_configuration.dart';
-import 'package:db_infra/src/encryptor.dart';
-import 'package:db_infra/src/encryptor_type.dart';
+import 'package:db_infra/src/configuration/configuration.dart';
+import 'package:db_infra/src/encryptor/encryptor.dart';
 import 'package:db_infra/src/logger.dart';
-import 'package:db_infra/src/setup_executors/ios_setup_executor.dart';
-import 'package:db_infra/src/storage.dart';
-import 'package:db_infra/src/storage_type.dart';
-import 'package:db_infra/src/utils/constants.dart';
-import 'package:db_infra/src/utils/file_utils.dart';
-import 'package:db_infra/src/utils/infra_extensions.dart';
-import 'package:db_infra/src/utils/types.dart';
+import 'package:db_infra/src/setup_executor/setup_executor.dart';
+import 'package:db_infra/src/storage/storage.dart';
+import 'package:db_infra/src/utils/utils.dart';
 import 'package:meta/meta.dart';
 
 ///
@@ -105,13 +99,13 @@ class InfraSetupCommand extends BaseCommand {
       ..addOption(
         infraStorageTypeArg,
         help: 'Specify the infrastructure storage type',
-        allowed: StorageType.values.map(enumName),
-        defaultsTo: enumName(StorageType.disk),
+        allowed: StorageType.values.asNameList(),
+        defaultsTo: StorageType.disk.name,
       )
       ..addOption(
         infraEncryptorTypeArg,
         help: 'Specify the infrastructure encryptor type',
-        allowed: EncryptorType.values.map(enumName),
+        allowed: EncryptorType.values.asNameList(),
         defaultsTo: EncryptorType.base64.name,
       )
       ..addOption(
@@ -122,13 +116,13 @@ class InfraSetupCommand extends BaseCommand {
       ..addOption(
         infraIosBuildOutputTypeArg,
         help: 'Specify the infrastructure ios build output type',
-        allowed: IosBuildOutputType.values.map(enumName),
+        allowed: IosBuildOutputType.values.asNameList(),
         defaultsTo: IosBuildOutputType.ipa.name,
       )
       ..addOption(
         infraAndroidBuildOutputTypeArg,
         help: 'Specify the infrastructure android build output type',
-        allowed: AndroidBuildOutputType.values.map(enumName),
+        allowed: AndroidBuildOutputType.values.asNameList(),
         defaultsTo: AndroidBuildOutputType.apk.name,
       )
       ..addOption(

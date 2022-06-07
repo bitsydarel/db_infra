@@ -8,9 +8,8 @@ import 'package:db_infra/src/apple/device/device.dart';
 import 'package:db_infra/src/apple/provision_profile/api/profiles_dto.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
-import 'package:db_infra/src/run_configuration.dart';
-import 'package:db_infra/src/utils/exceptions.dart';
-import 'package:db_infra/src/utils/types.dart';
+import 'package:db_infra/src/configuration/configuration.dart';
+import 'package:db_infra/src/utils/utils.dart';
 import 'package:http/http.dart';
 import 'package:io/io.dart';
 
@@ -19,7 +18,7 @@ class AppStoreConnectApiProfiles extends AppStoreConnectApi<ProvisionProfile> {
   ///
   AppStoreConnectApiProfiles({
     required Client httpClient,
-    required RunConfiguration configuration,
+    required Configuration configuration,
   }) : super(httpClient: httpClient, configuration: configuration);
 
   ///

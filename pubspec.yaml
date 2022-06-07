@@ -1,15 +1,14 @@
 name: db_infra
 description: A command-line tool that help to automate your release workflow.
-version: 0.0.1
-author: bitsydarel@gmail.com
+version: 0.0.2
 homepage: https://github.com/db_infra
 
 environment:
-  sdk: '>=2.14.0 <3.0.0'
+  sdk: '>=2.15.0 <3.0.0'
 
 dependencies:
   args: ^2.3.0
-  ftpconnect: 1.0.0
+  ftpconnect: 1.0.1
   glob: '>=2.0.0 <2.1.0'
   http: '>=0.13.3 <0.14.0'
   io: ^1.0.3

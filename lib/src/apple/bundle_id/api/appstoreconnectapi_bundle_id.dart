@@ -4,9 +4,8 @@ import 'dart:io';
 import 'package:db_infra/src/apple/appstoreconnectapi.dart';
 import 'package:db_infra/src/apple/bundle_id/api/bundle_ids_dto.dart';
 import 'package:db_infra/src/apple/bundle_id/bundle_id.dart';
-import 'package:db_infra/src/run_configuration.dart';
-import 'package:db_infra/src/utils/exceptions.dart';
-import 'package:db_infra/src/utils/types.dart';
+import 'package:db_infra/src/configuration/configuration.dart';
+import 'package:db_infra/src/utils/utils.dart';
 import 'package:http/http.dart';
 import 'package:io/io.dart';
 
@@ -15,7 +14,7 @@ class AppStoreConnectApiBundleId extends AppStoreConnectApi<BundleId> {
   ///
   AppStoreConnectApiBundleId({
     required Client httpClient,
-    required RunConfiguration configuration,
+    required Configuration configuration,
   }) : super(httpClient: httpClient, configuration: configuration);
 
   ///

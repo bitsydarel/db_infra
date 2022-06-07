@@ -138,6 +138,7 @@ class CertificatesManager {
         return certificate;
       }
     }
+    return null;
   }
 
   ///

@@ -3,23 +3,16 @@ import 'dart:io';
 
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
-import 'package:db_infra/src/configurations/infra_build_configuration.dart';
-import 'package:db_infra/src/encryptor.dart';
-import 'package:db_infra/src/encryptor_type.dart';
-import 'package:db_infra/src/encryptors/base64_encryptor.dart';
+import 'package:db_infra/src/configuration/configuration.dart';
+import 'package:db_infra/src/encryptor/encryptor.dart';
 import 'package:db_infra/src/logger.dart';
-import 'package:db_infra/src/run_configuration.dart';
-import 'package:db_infra/src/storage.dart';
-import 'package:db_infra/src/storage_type.dart';
-import 'package:db_infra/src/storages/storage_factory.dart';
-import 'package:db_infra/src/utils/constants.dart';
-import 'package:db_infra/src/utils/exceptions.dart';
-import 'package:db_infra/src/utils/file_utils.dart';
-import 'package:db_infra/src/utils/types.dart';
+import 'package:db_infra/src/storage/storage.dart';
+import 'package:db_infra/src/utils/utils.dart';
 import 'package:io/io.dart';
 import 'package:meta/meta.dart';
 
-///
+/// Contains base functions and methods use by command of db_infra.
+@internal
 abstract class BaseCommand extends Command<void> {
   /// Load the infrastructure configuration.
   @protected
@@ -46,7 +39,7 @@ abstract class BaseCommand extends Command<void> {
     );
   }
 
-  ///
+  /// Save the build configuration.
   @protected
   Future<void> saveConfiguration(
     InfraBuildConfiguration configuration,
@@ -76,16 +69,17 @@ abstract class BaseCommand extends Command<void> {
   /// Cleanup the infrastructure after the build or setup is done.
   @protected
   Future<void> cleanup(
-    RunConfiguration configuration,
+    Configuration configuration,
     Directory infraDirectory,
   ) async {
     infraDirectory.deleteSync(recursive: true);
   }
 }
 
-///
+/// Extensions for the [ArgResults] to simplify work with it.
+@internal
 extension ArgResultsExtension on ArgResults {
-  ///
+  /// Get the configuration file passed by the arg [infraConfigFileArg].
   File getConfigurationFile({bool checkIfExist = false}) {
     final String configFilePath = parseString(infraConfigFileArg);
 
@@ -102,7 +96,7 @@ extension ArgResultsExtension on ArgResults {
     return configurationFile;
   }
 
-  ///
+  /// Get the project directory specified by the command.
   Directory getProjectDirectory() {
     final Directory projectDir = getResolvedDirectory(rest.last);
 
@@ -185,7 +179,7 @@ extension ArgResultsExtension on ArgResults {
       return argumentValue;
     }
 
-    throw FormatException('$argumentName need to be specified');
+    throw ArgumentError('$argumentName need to be specified');
   }
 
   ///

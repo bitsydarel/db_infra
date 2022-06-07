@@ -1,7 +1,7 @@
 import 'dart:io';
 
-import 'package:db_infra/src/run_configuration.dart';
-import 'package:db_infra/src/utils/types.dart';
+import 'package:db_infra/src/configuration/configuration.dart';
+import 'package:db_infra/src/utils/utils.dart';
 import 'package:http/http.dart';
 import 'package:jose/jose.dart';
 import 'package:meta/meta.dart';
@@ -29,7 +29,7 @@ abstract class AppStoreConnectApi<R> {
 
   ///
   @protected
-  final RunConfiguration configuration;
+  final Configuration configuration;
 
   ///
   String? _token;
@@ -93,13 +93,13 @@ abstract class AppStoreConnectApi<R> {
 
 ///
 extension _JWTExtension on JsonWebSignatureBuilder {
-  void addHeader(final RunConfiguration configuration) {
+  void addHeader(final Configuration configuration) {
     setProtectedHeader('typ', 'JWT');
 
     setProtectedHeader('kid', configuration.iosAppStoreConnectKeyId);
   }
 
-  void addPayload(final RunConfiguration configuration) {
+  void addPayload(final Configuration configuration) {
     final String issuer = configuration.iosAppStoreConnectKeyIssuer;
 
     final double inSeconds =
@@ -116,7 +116,7 @@ extension _JWTExtension on JsonWebSignatureBuilder {
     jsonContent = claims.toJson();
   }
 
-  void sign(final RunConfiguration configuration) {
+  void sign(final Configuration configuration) {
     final File privateKey = configuration.iosAppStoreConnectKey;
 
     if (!privateKey.existsSync()) {

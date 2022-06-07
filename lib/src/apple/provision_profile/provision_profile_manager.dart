@@ -208,5 +208,6 @@ class ProvisionProfileManager {
         }
       }
     }
+    return null;
   }
 }

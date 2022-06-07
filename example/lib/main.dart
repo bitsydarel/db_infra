@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -50,6 +51,12 @@ class MyHomePage extends StatefulWidget {
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(StringProperty('title', title));
+  }
 }
 
 class _MyHomePageState extends State<MyHomePage> {
@@ -68,6 +75,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    const bool boolEnvExample = bool.fromEnvironment('BOOL_ENV_EXAMPLE');
+
+    const String stringEnvExample =
+        String.fromEnvironment('STRING_ENV_EXAMPLE');
+
+    const int intEnvExample = int.fromEnvironment('INT_ENV_EXAMPLE');
+
     // This method is rerun every time setState is called, for instance as done
     // by the _incrementCounter method above.
     //
@@ -105,6 +119,9 @@ class _MyHomePageState extends State<MyHomePage> {
               '$_counter',
               style: Theme.of(context).textTheme.headline4,
             ),
+            const Text('String Env variable example: $stringEnvExample'),
+            const Text('Bool Env variable example: $boolEnvExample'),
+            const Text('int Env variable example: $intEnvExample'),
           ],
         ),
       ),

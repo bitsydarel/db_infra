@@ -96,5 +96,11 @@ const String infraBuildDistributorTypeArg = 'build-distributor';
 /// Infrastructure output directory.
 const String infraBuildOutputDirectoryArg = 'build-output-dir';
 
+/// Infrastructure environment variable file.
+const String infraBuildDotEnvVariableFileArg = 'build-dot-env-file';
+
+///
+const String infraBuildEnvVariableTypeArg = 'build-env-type';
+
 /// Infrastructure configuration file.
 const String infraConfigFileArg = 'config-file';

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:collection/collection.dart';
-import 'package:db_infra/src/utils/types.dart';
 import 'package:glob/glob.dart';
 import 'package:glob/list_local_fs.dart';
 import 'package:path/path.dart' as path;
@@ -24,9 +23,6 @@ enum AndroidBuildOutputType {
 ///
 extension IosBuildOutputTypeExtension on IosBuildOutputType {
   ///
-  String get name => enumName(this);
-
-  ///
   File? outputFile(final Directory projectDirectory) {
     final Directory outputDirectory;
     final Glob releaseFileFinder;
@@ -46,9 +42,6 @@ extension IosBuildOutputTypeExtension on IosBuildOutputType {
 
 ///
 extension AndroidBuildOutputTypeExtension on AndroidBuildOutputType {
-  ///
-  String get name => enumName(this);
-
   ///
   File? outputFile(final Directory projectDirectory) {
     final Directory outputDirectory;
@@ -78,14 +71,14 @@ extension StringIosBuildOutputTypeExtension on String {
   ///
   IosBuildOutputType asIosBuildOutputType() {
     return IosBuildOutputType.values.firstWhere(
-      (IosBuildOutputType type) => enumName(type) == this,
+      (IosBuildOutputType type) => type.name == this,
     );
   }
 
   ///
   AndroidBuildOutputType asAndroidBuildOutputType() {
     return AndroidBuildOutputType.values.firstWhere(
-      (AndroidBuildOutputType type) => enumName(type) == this,
+      (AndroidBuildOutputType type) => type.name == this,
     );
   }
 }

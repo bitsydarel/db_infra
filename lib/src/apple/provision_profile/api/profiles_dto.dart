@@ -3,8 +3,7 @@ import 'package:db_infra/src/apple/bundle_id/api/bundle_ids_dto.dart';
 import 'package:db_infra/src/apple/certificates/api/certificates_dto.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
-import 'package:db_infra/src/utils/exceptions.dart';
-import 'package:db_infra/src/utils/types.dart';
+import 'package:db_infra/src/utils/utils.dart';
 import 'package:io/io.dart';
 import 'package:json_annotation/json_annotation.dart';
 

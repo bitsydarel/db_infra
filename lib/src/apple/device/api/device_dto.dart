@@ -1,5 +1,5 @@
 import 'package:db_infra/src/apple/device/device.dart';
-import 'package:db_infra/src/utils/types.dart';
+import 'package:db_infra/src/utils/utils.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'device_dto.g.dart';

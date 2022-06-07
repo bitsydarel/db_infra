@@ -5,17 +5,13 @@ import 'package:args/args.dart';
 import 'package:db_infra/src/apple/bundle_id/bundle_id_manager.dart';
 import 'package:db_infra/src/apple/certificates/certificates_manager.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.dart';
-import 'package:db_infra/src/build_distributor.dart';
-import 'package:db_infra/src/build_distributor_type.dart';
-import 'package:db_infra/src/build_distributors/build_distributor_factory.dart';
-import 'package:db_infra/src/build_executors/ios/flutter_ios_build_executor.dart';
+import 'package:db_infra/src/build_distributor/build_distributor.dart';
+import 'package:db_infra/src/build_executor/build_executor.dart';
 import 'package:db_infra/src/commands/base_command.dart';
-import 'package:db_infra/src/configurations/infra_build_configuration.dart';
+import 'package:db_infra/src/configuration/configuration.dart';
+import 'package:db_infra/src/environment_variable_handler/environment_variable_handler.dart';
 import 'package:db_infra/src/logger.dart';
-import 'package:db_infra/src/utils/constants.dart';
-import 'package:db_infra/src/utils/file_utils.dart';
-import 'package:db_infra/src/utils/infra_extensions.dart';
-import 'package:db_infra/src/utils/types.dart';
+import 'package:db_infra/src/utils/utils.dart';
 
 ///
 class InfraBuildCommand extends BaseCommand {
@@ -33,8 +29,19 @@ class InfraBuildCommand extends BaseCommand {
       ..addOption(
         infraBuildDistributorTypeArg,
         help: 'Specify the infrastructure build distributor type.',
-        allowed: BuildDistributorType.values.map(enumName),
+        allowed: BuildDistributorType.values.map((BuildDistributorType e) {
+          return e.name;
+        }),
         defaultsTo: BuildDistributorType.directory.name,
+      )
+      ..addOption(
+        infraBuildEnvVariableTypeArg,
+        help: 'Specify the infrastructure build environment type to use',
+        allowed: EnvironmentVariableHandlerType.values.asNameList(),
+      )
+      ..addOption(
+        infraBuildDotEnvVariableFileArg,
+        help: 'Specify the infrastructure build dot environment file to use',
       )
       ..addOption(
         infraBuildOutputDirectoryArg,
@@ -65,14 +72,23 @@ class InfraBuildCommand extends BaseCommand {
     );
 
     final BuildDistributorType buildDistributorType =
-        getBuildDistributorType(commandArgs);
+        _getBuildDistributorType(commandArgs);
 
-    final BuildDistributor buildDistributor = getBuildDistributor(
+    final BuildDistributor buildDistributor = _getBuildDistributor(
       commandArgs,
       logger,
       buildConfiguration,
       buildDistributorType,
     );
+
+    final EnvironmentVariableHandlerType? envHandlerType =
+        _getEnvironmentVariableType(commandArgs);
+
+    EnvironmentVariableHandler? envHandler;
+
+    if (envHandlerType != null) {
+      envHandler = _getEnvironmentVariableHandler(envHandlerType, commandArgs);
+    }
 
     final CertificatesManager certificatesManager =
         buildConfiguration.getCertificatesManager(logger);
@@ -97,6 +113,7 @@ class InfraBuildCommand extends BaseCommand {
       certificatesManager: certificatesManager,
       bundleIdManager: bundleIdManager,
       logger: logger,
+      environmentVariableHandler: envHandler,
     ).build();
 
     await buildDistributor.distribute(iosFlutterOutput);
@@ -104,16 +121,14 @@ class InfraBuildCommand extends BaseCommand {
     await cleanup(buildConfiguration, infraDir);
   }
 
-  /// Get the build distributor
-  BuildDistributorType getBuildDistributorType(ArgResults args) {
+  BuildDistributorType _getBuildDistributorType(ArgResults args) {
     final String buildDistributorType =
         args.parseString(infraBuildDistributorTypeArg);
 
     return buildDistributorType.asBuildDistributorType();
   }
 
-  ///
-  BuildDistributor getBuildDistributor(
+  BuildDistributor _getBuildDistributor(
     final ArgResults args,
     final Logger logger,
     final InfraBuildConfiguration configuration,
@@ -127,5 +142,40 @@ class InfraBuildCommand extends BaseCommand {
       configuration: configuration,
       outputDirectoryPath: outputDirectoryPath,
     );
+  }
+
+  EnvironmentVariableHandlerType? _getEnvironmentVariableType(ArgResults args) {
+    final String? environmentVariableType =
+        args.parseOptionalString(infraBuildEnvVariableTypeArg);
+
+    return environmentVariableType?.asEnvironmentVariableType();
+  }
+
+  EnvironmentVariableHandler? _getEnvironmentVariableHandler(
+    EnvironmentVariableHandlerType type,
+    ArgResults args,
+  ) {
+    switch (type) {
+      case EnvironmentVariableHandlerType.dotEnv:
+        final String dotFilePath =
+            args.parseString(infraBuildDotEnvVariableFileArg);
+
+        final File dotFile = File(dotFilePath);
+
+        if (!dotFile.existsSync()) {
+          throw ArgumentError.value(
+            dotFilePath,
+            infraBuildDotEnvVariableFileArg,
+            '$infraBuildEnvVariableTypeArg of ${type.name} selected but valid '
+            'dot file path was not provided.',
+          );
+        }
+
+        return type.asEnvironmentVariableHandler(
+          dotEnvironmentVariableFile: dotFile,
+        );
+      default:
+        throw UnimplementedError();
+    }
   }
 }

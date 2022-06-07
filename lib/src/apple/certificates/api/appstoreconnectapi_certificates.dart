@@ -5,9 +5,8 @@ import 'package:db_infra/src/apple/appstoreconnectapi.dart';
 import 'package:db_infra/src/apple/certificates/api/certificates_dto.dart';
 import 'package:db_infra/src/apple/certificates/certificate.dart';
 import 'package:db_infra/src/apple/certificates/certificate_type.dart';
-import 'package:db_infra/src/run_configuration.dart';
-import 'package:db_infra/src/utils/exceptions.dart';
-import 'package:db_infra/src/utils/types.dart';
+import 'package:db_infra/src/configuration/configuration.dart';
+import 'package:db_infra/src/utils/utils.dart';
 import 'package:http/http.dart';
 import 'package:io/io.dart';
 
@@ -16,7 +15,7 @@ class AppStoreConnectApiCertificates extends AppStoreConnectApi<Certificate> {
   ///
   AppStoreConnectApiCertificates({
     required Client httpClient,
-    required RunConfiguration configuration,
+    required Configuration configuration,
   }) : super(httpClient: httpClient, configuration: configuration);
 
   ///

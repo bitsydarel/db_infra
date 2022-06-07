@@ -1,5 +1,5 @@
 import 'package:db_infra/src/apple/bundle_id/bundle_id.dart';
-import 'package:db_infra/src/utils/types.dart';
+import 'package:db_infra/src/utils/utils.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'bundle_ids_dto.g.dart';

@@ -9,12 +9,12 @@ import 'package:db_infra/src/apple/device/api/appstoreconnectapi_devices.dart';
 import 'package:db_infra/src/apple/device/device_manager.dart';
 import 'package:db_infra/src/apple/provision_profile/api/appstoreconnectapi_profiles.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.dart';
+import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/logger.dart';
-import 'package:db_infra/src/run_configuration.dart';
 import 'package:db_infra/src/utils/network_manager.dart';
 
 ///
-extension RunConfigurationExtensions on RunConfiguration {
+extension RunConfigurationExtensions on Configuration {
   ///
   ProvisionProfileManager getProfilesManager(
     CertificatesManager certificatesManager,
