@@ -8,6 +8,7 @@ import 'package:db_infra/src/apple/device/device.dart';
 import 'package:db_infra/src/apple/provision_profile/api/appstoreconnectapi_profiles.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
+import 'package:db_infra/src/build_signing_type.dart';
 import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
@@ -138,10 +139,13 @@ class ProvisionProfileManager {
   }
 
   ///
-  File exportOptionsPlist(
-    final String appId,
-    final ProvisionProfile provisionProfile, {
+  File exportOptionsPlist({
+    required final String appId,
+    required final IosBuildSigningType signingType,
+    required final ProvisionProfileType provisionProfileType,
+    final ProvisionProfile? provisionProfile,
     final String? certificateSha1,
+    final String? developerTeamId,
   }) {
     final StringBuffer builder = StringBuffer()
       ..writeln('<?xml version="1.0" encoding="UTF-8"?>')
@@ -154,12 +158,16 @@ class ProvisionProfileManager {
       ..writeln('<key>uploadSymbols</key>')
       ..writeln('<true/>')
       ..writeln('<key>uploadBitcode</key>')
-      ..writeln('<false/>')
-      ..writeln('<key>provisioningProfiles</key>')
-      ..writeln('<dict>')
-      ..writeln('<key>$appId</key>')
-      ..writeln('<string>${provisionProfile.name}</string>')
-      ..writeln('</dict>');
+      ..writeln('<false/>');
+
+    if (provisionProfile != null) {
+      builder
+        ..writeln('<key>provisioningProfiles</key>')
+        ..writeln('<dict>')
+        ..writeln('<key>$appId</key>')
+        ..writeln('<string>${provisionProfile.name}</string>')
+        ..writeln('</dict>');
+    }
 
     if (certificateSha1 != null) {
       builder
@@ -167,13 +175,19 @@ class ProvisionProfileManager {
         ..writeln('<string>$certificateSha1</string>');
     }
 
+    if (developerTeamId != null) {
+      builder
+        ..writeln('<key>teamID</key>')
+        ..writeln('<string>$developerTeamId</string>');
+    }
+
     builder
       ..writeln('<key>signingStyle</key>')
-      ..writeln('<string>manual</string>')
+      ..writeln('<string>${signingType.name}</string>')
       ..writeln('<key>destination</key>')
       ..writeln('<string>export</string>')
       ..writeln('<key>method</key>')
-      ..writeln('<string>${provisionProfile.type.exportMethod}</string>')
+      ..writeln('<string>${provisionProfileType.exportMethod}</string>')
       ..writeln('</dict>')
       ..writeln('</plist>');
 

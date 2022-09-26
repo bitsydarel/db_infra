@@ -11,7 +11,6 @@ export 'infra_build_configuration.dart';
 export 'infra_setup_configuration.dart';
 export 'run_configuration.dart';
 
-
 ///
 abstract class Configuration {
   /// Android application id.
@@ -51,12 +50,28 @@ abstract class Configuration {
   final ProvisionProfileType iosProvisionProfileType;
 
   ///
+  final String androidKeyAlias;
+
+  ///
+  final String androidKeyPassword;
+
+  ///
+  final String androidStorePassword;
+
+  ///
+  final File androidStoreFile;
+
+  ///
   const Configuration({
     required this.androidAppId,
     required this.iosAppId,
     required this.iosAppStoreConnectKeyId,
     required this.iosAppStoreConnectKeyIssuer,
     required this.iosAppStoreConnectKey,
+    required this.androidKeyAlias,
+    required this.androidKeyPassword,
+    required this.androidStoreFile,
+    required this.androidStorePassword,
     required this.storage,
     required this.encryptor,
     required this.storageType,

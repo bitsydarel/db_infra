@@ -7,6 +7,7 @@ import 'package:db_infra/src/apple/certificates/certificates_manager.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.dart';
 import 'package:db_infra/src/build_distributor/build_distributor.dart';
 import 'package:db_infra/src/build_executor/build_executor.dart';
+import 'package:db_infra/src/build_executor/flutter_android_build_executor.dart';
 import 'package:db_infra/src/commands/base_command.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/environment_variable_handler/environment_variable_handler.dart';
@@ -44,6 +45,10 @@ class InfraBuildCommand extends BaseCommand {
         help: 'Specify the infrastructure build dot environment file to use',
       )
       ..addOption(
+        infraAesEncryptorPasswordArg,
+        help: 'Specify the infrastructure AES encryptor password',
+      )
+      ..addOption(
         infraBuildOutputDirectoryArg,
         help: 'Specify the output directory.',
       );
@@ -65,10 +70,14 @@ class InfraBuildCommand extends BaseCommand {
 
     final Directory infraDir = projectDir.createInfraDirectory();
 
+    final String? aesEncryptorPassword =
+        commandArgs.parseOptionalString(infraAesEncryptorPasswordArg);
+
     final InfraBuildConfiguration buildConfiguration = await loadConfiguration(
-      configurationFile,
-      infraDir,
-      logger,
+      configuration: configurationFile,
+      infraDirectory: infraDir,
+      logger: logger,
+      aesPassword: aesEncryptorPassword,
     );
 
     final BuildDistributorType buildDistributorType =
@@ -116,7 +125,14 @@ class InfraBuildCommand extends BaseCommand {
       environmentVariableHandler: envHandler,
     ).build();
 
+    final File androidFlutterOutput = await FlutterAndroidBuildExecutor(
+      logger: logger,
+      configuration: buildConfiguration,
+      projectDirectory: projectDir,
+    ).build();
+
     await buildDistributor.distribute(iosFlutterOutput);
+    await buildDistributor.distribute(androidFlutterOutput);
 
     await cleanup(buildConfiguration, infraDir);
   }

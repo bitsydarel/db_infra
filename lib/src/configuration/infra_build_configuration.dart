@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/build_output_type.dart';
+import 'package:db_infra/src/build_signing_type.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/encryptor/encryptor.dart';
 import 'package:db_infra/src/logger.dart';
@@ -13,10 +14,10 @@ import 'package:path/path.dart' as path;
 ///
 class InfraBuildConfiguration extends Configuration {
   ///
-  final File iosCertificateSigningRequest;
+  final File? iosCertificateSigningRequest;
 
   ///
-  final File iosCertificateSigningRequestPrivateKey;
+  final File? iosCertificateSigningRequestPrivateKey;
 
   ///
   final String? iosCertificateSigningRequestName;
@@ -25,13 +26,19 @@ class InfraBuildConfiguration extends Configuration {
   final String? iosCertificateSigningRequestEmail;
 
   ///
-  final String iosProvisionProfileName;
+  final String? iosProvisionProfileName;
 
   ///
-  final String iosCertificateId;
+  final String? iosCertificateId;
+
+  ///
+  final String? iosDeveloperTeamId;
 
   ///
   final File iosExportOptionsPlist;
+
+  ///
+  final IosBuildSigningType iosSigningType;
 
   ///
   InfraBuildConfiguration({
@@ -47,19 +54,29 @@ class InfraBuildConfiguration extends Configuration {
     required IosBuildOutputType iosBuildOutputType,
     required AndroidBuildOutputType androidBuildOutputType,
     required ProvisionProfileType iosProvisionProfileType,
-    required this.iosCertificateSigningRequest,
-    required this.iosCertificateSigningRequestPrivateKey,
-    required this.iosCertificateSigningRequestName,
-    required this.iosCertificateSigningRequestEmail,
-    required this.iosProvisionProfileName,
-    required this.iosCertificateId,
+    required String androidKeyAlias,
+    required String androidKeyPassword,
+    required File androidStoreFile,
+    required String androidStorePassword,
     required this.iosExportOptionsPlist,
+    required this.iosSigningType,
+    this.iosCertificateSigningRequest,
+    this.iosCertificateSigningRequestPrivateKey,
+    this.iosCertificateSigningRequestName,
+    this.iosCertificateSigningRequestEmail,
+    this.iosProvisionProfileName,
+    this.iosCertificateId,
+    this.iosDeveloperTeamId,
   }) : super(
           androidAppId: androidAppId,
           iosAppId: iosAppId,
           iosAppStoreConnectKeyId: iosAppStoreConnectKeyId,
           iosAppStoreConnectKeyIssuer: iosAppStoreConnectKeyIssuer,
           iosAppStoreConnectKey: iosAppStoreConnectKey,
+          androidKeyAlias: androidKeyAlias,
+          androidKeyPassword: androidKeyPassword,
+          androidStoreFile: androidStoreFile,
+          androidStorePassword: androidStorePassword,
           storage: storage,
           encryptor: encryptor,
           storageType: storageType,
@@ -74,6 +91,7 @@ class InfraBuildConfiguration extends Configuration {
     required final JsonMap json,
     required final Logger logger,
     required final Directory infraDir,
+    String? aesPassword,
   }) async {
     final Object? androidAppId = json[androidAppIdArg];
 
@@ -110,10 +128,22 @@ class InfraBuildConfiguration extends Configuration {
 
     final Object? androidBuildOutputType = json['androidBuildOutputType'];
 
+    final Object? androidKeyAlias = json[infraAndroidKeyAliasArg];
+
+    final Object? androidKeyPassword = json[infraAndroidKeyPasswordArg];
+
+    final Object? androidStoreFile = json[infraAndroidStoreFileArg];
+
+    final Object? androidStorePassword = json[infraAndroidStorePasswordArg];
+
     final EncryptorType encryptorType = json.getEncryptorType();
 
-    final Encryptor encryptor =
-        json.getEncryptor(encryptorType, logger, infraDir);
+    final Encryptor encryptor = json.getEncryptor(
+      encryptorType: encryptorType,
+      infraDirectory: infraDir,
+      infraLogger: logger,
+      aesPassword: aesPassword,
+    );
 
     final StorageType infraStorageType = json.getStorageType();
 
@@ -127,8 +157,9 @@ class InfraBuildConfiguration extends Configuration {
             ExitCode.config.code,
           );
 
+    final Object? developerTeamId = json[iosDevelopmentTeamIdArg];
 
-
+    final Object? signingType = json[iosBuildSigningTypeArg];
 
     return InfraBuildConfiguration(
       androidAppId: androidAppId is String
@@ -146,11 +177,17 @@ class InfraBuildConfiguration extends Configuration {
           : throw ArgumentError(iosAppStoreConnectKey),
       iosCertificateSigningRequest: iosCertificateSigningRequest is String
           ? File('${infraDir.path}/$iosCertificateSigningRequest')
-          : throw ArgumentError(iosCertificateSigningRequest),
+          : (developerTeamId is String // for automatic sign in.
+              ? null
+              : throw ArgumentError(iosCertificateSigningRequest)),
       iosCertificateSigningRequestPrivateKey:
           iosCertificateSigningRequestPrivateKey is String
               ? File('${infraDir.path}/$iosCertificateSigningRequestPrivateKey')
-              : throw ArgumentError(iosCertificateSigningRequestPrivateKey),
+              : (developerTeamId is String
+                  ? null
+                  : throw ArgumentError(
+                      iosCertificateSigningRequestPrivateKey,
+                    )),
       iosCertificateSigningRequestName:
           iosCertificateSigningRequestName is String
               ? iosCertificateSigningRequestName
@@ -161,26 +198,52 @@ class InfraBuildConfiguration extends Configuration {
               : null,
       iosProvisionProfileName: iosProvisionProfileName is String
           ? iosProvisionProfileName
-          : throw ArgumentError(iosProvisionProfileName),
+          : (developerTeamId is String
+              ? null
+              : throw ArgumentError(
+                  iosProvisionProfileName,
+                )),
       iosProvisionProfileType: iosProvisionProfileType is String
           ? iosProvisionProfileType.fromKey()
           : throw ArgumentError(iosProvisionProfileType),
       iosCertificateId: iosCertificateId is String
           ? iosCertificateId
-          : throw ArgumentError(iosCertificateId),
+          : (developerTeamId != null
+              ? null
+              : throw ArgumentError(
+                  iosCertificateId,
+                )),
+      iosDeveloperTeamId: developerTeamId is String ? developerTeamId : null,
       iosExportOptionsPlist: iosExportOptionsPlist is String
           ? File('${infraDir.path}/$iosExportOptionsPlist')
           : throw ArgumentError(iosExportOptionsPlist),
+      iosBuildOutputType: iosBuildOutputType is String
+          ? iosBuildOutputType.asIosBuildOutputType()
+          : throw ArgumentError(iosBuildOutputType),
+      androidKeyAlias: androidKeyAlias is String
+          ? await encryptor.decrypt(androidKeyAlias)
+          : throw ArgumentError(androidKeyAlias),
+      androidKeyPassword: androidKeyPassword is String
+          ? await encryptor.decrypt(androidKeyPassword)
+          : throw ArgumentError(androidKeyPassword),
+      androidStorePassword: androidStorePassword is String
+          ? await encryptor.decrypt(androidStorePassword)
+          : throw ArgumentError(androidStorePassword),
+      androidStoreFile: androidStoreFile is String
+          ? File('${infraDir.path}/$androidStoreFile')
+          : throw ArgumentError(androidStoreFile),
+      androidBuildOutputType: androidBuildOutputType is String
+          ? androidBuildOutputType.asAndroidBuildOutputType()
+          : throw ArgumentError(androidBuildOutputType),
+      iosSigningType: signingType is String
+          ? IosBuildSigningType.values.byName(signingType)
+          : (developerTeamId != null
+              ? IosBuildSigningType.automatic
+              : IosBuildSigningType.manuel),
       storageType: infraStorageType,
       storage: infraStorageType.fromJson(storageAsJson, logger, infraDir),
       encryptorType: encryptorType,
       encryptor: encryptor,
-      iosBuildOutputType: iosBuildOutputType is String
-          ? iosBuildOutputType.asIosBuildOutputType()
-          : throw ArgumentError(iosBuildOutputType),
-      androidBuildOutputType: androidBuildOutputType is String
-          ? androidBuildOutputType.asAndroidBuildOutputType()
-          : throw ArgumentError(androidBuildOutputType),
     );
   }
 
@@ -195,22 +258,32 @@ class InfraBuildConfiguration extends Configuration {
       iosAppStoreConnectKeyIdArg: iosAppStoreConnectKeyId,
       iosAppStoreConnectKeyIssuerArg: iosAppStoreConnectKeyIssuer,
       iosAppStoreConnectKeyPathArg: path.basename(iosAppStoreConnectKey.path),
-      iosCertificateSigningRequestPathArg:
-          path.basename(iosCertificateSigningRequest.path),
+      iosCertificateSigningRequestPathArg: iosCertificateSigningRequest != null
+          ? path.basename(iosCertificateSigningRequest!.path)
+          : null,
       iosCertificateSigningRequestPrivateKeyPathArg:
-          path.basename(iosCertificateSigningRequestPrivateKey.path),
+          iosCertificateSigningRequestPrivateKey != null
+              ? path.basename(iosCertificateSigningRequestPrivateKey!.path)
+              : null,
       iosCertificateSigningRequestNameArg: iosCertificateSigningRequestName,
       iosCertificateSigningRequestEmailArg: iosCertificateSigningRequestEmail,
       iosProvisionProfileNameArg: iosProvisionProfileName,
       iosProvisionProfileTypeArg: iosProvisionProfileType.key,
       iosCertificateIdArg: iosCertificateId,
+      iosDevelopmentTeamIdArg: iosDeveloperTeamId,
       'iosExportOptionsPlist': path.basename(iosExportOptionsPlist.path),
+      iosBuildSigningTypeArg: iosSigningType.name,
       'encryptor': encryptor.toJson(),
       infraEncryptorTypeArg: encryptorType.name,
       'storage': encryptedStorageProperties,
       infraStorageTypeArg: storageType.name,
       'iosBuildOutputType': iosBuildOutputType.name,
       'androidBuildOutputType': androidBuildOutputType.name,
+      infraAndroidKeyAliasArg: await encryptor.encrypt(androidKeyAlias),
+      infraAndroidKeyPasswordArg: await encryptor.encrypt(androidKeyPassword),
+      infraAndroidStorePasswordArg:
+          await encryptor.encrypt(androidStorePassword),
+      infraAndroidStoreFileArg: path.basename(androidStoreFile.path),
     };
   }
 }
@@ -239,21 +312,23 @@ extension InfraConfigurationJsonExtension on JsonMap {
   }
 
   ///
-  Encryptor getEncryptor(
-    final EncryptorType encryptorType,
-    final Logger infraLogger,
-    final Directory infraDirectory,
-  ) {
+  Encryptor getEncryptor({
+    required final EncryptorType encryptorType,
+    required final Directory infraDirectory,
+    required final Logger infraLogger,
+    String? aesPassword,
+  }) {
     final Object? encryptorAsJson = this['encryptor'];
 
     return encryptorType.fromJson(
-      encryptorAsJson is JsonMap
+      json: encryptorAsJson is JsonMap
           ? encryptorAsJson
           : throw UnrecoverableException(
               'Infrastructure encryptor could not be parsed from json $this',
               ExitCode.config.code,
             ),
-      infraDirectory,
+      infraDirectory: infraDirectory,
+      aesPassword: aesPassword,
     );
   }
 

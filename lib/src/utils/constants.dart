@@ -57,6 +57,12 @@ const String iosProvisionProfileTypeArg = 'ios-provision-profile-type';
 /// iOS certificate id.
 const String iosCertificateIdArg = 'ios-certificate-id';
 
+/// ios development team id.
+const String iosDevelopmentTeamIdArg = 'ios-development-team-id';
+
+/// iOS Build signing type.
+const String iosBuildSigningTypeArg = 'ios-build-signing-type';
+
 /// Infrastructure storage type.
 const String infraStorageTypeArg = 'storage-type';
 
@@ -71,6 +77,18 @@ const String infraIosBuildOutputTypeArg = 'ios-build-output-type';
 
 /// Infrastructure android build output type.
 const String infraAndroidBuildOutputTypeArg = 'android-build-output-type';
+
+///
+const String infraAndroidKeyAliasArg = 'android-key-alias';
+
+///
+const String infraAndroidKeyPasswordArg = 'android-key-password';
+
+///
+const String infraAndroidStoreFileArg = 'android-store-file';
+
+///
+const String infraAndroidStorePasswordArg = 'android-store-password';
 
 /// Infrastructure ftp username.
 const String infraFtpUsernameArg = 'ftp-username';
@@ -87,6 +105,16 @@ const String infraFtpPortArg = 'ftp-port';
 /// Infrastructure ftp folder name.
 const String infraFtpFolderNameArg = 'ftp-folder-name';
 
+/// Infrastructure gcloud project id.
+const String infraGcloudProjectIdArg = 'gcloud-project-id';
+
+/// Infrastructure gcloud bucket name.
+const String infraGcloudProjectBucketNameArg = 'gcloud-bucket-name';
+
+/// Infrastructure gcloud service account name.
+const String infraGcloudProjectServiceAccountFileArg =
+    'gcloud-service-account-file';
+
 /// Infrastructure verbose logging.
 const String infraVerboseLoggingArg = 'verbose';
 
@@ -96,11 +124,14 @@ const String infraBuildDistributorTypeArg = 'build-distributor';
 /// Infrastructure output directory.
 const String infraBuildOutputDirectoryArg = 'build-output-dir';
 
-/// Infrastructure environment variable file.
+/// Infrastructure dotEnv environment variable file.
 const String infraBuildDotEnvVariableFileArg = 'build-dot-env-file';
 
-///
+/// Infrastructure environment variable type.
 const String infraBuildEnvVariableTypeArg = 'build-env-type';
 
 /// Infrastructure configuration file.
 const String infraConfigFileArg = 'config-file';
+
+/// Infrastructure aes encryptor password.
+const String infraAesEncryptorPasswordArg = 'aes-encryptor-password';

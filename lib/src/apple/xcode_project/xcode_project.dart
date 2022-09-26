@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:db_infra/src/apple/certificates/certificate.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
+import 'package:db_infra/src/build_signing_type.dart';
 import 'package:path/path.dart' as path;
 
 ///
@@ -17,29 +18,58 @@ const String provisionProfileKey = 'PROVISIONING_PROFILE';
 const String provisioningProfileSpecifierKey = 'PROVISIONING_PROFILE_SPECIFIER';
 
 ///
-File createCodeSigningXCConfig(
-  Directory parentDirectory,
-  ProvisionProfile provisionProfile,
-  Certificate certificate,
-) {
+const String iosDeveloperTeamIdKey = 'DEVELOPMENT_TEAM';
+
+///
+File createCodeSigningXCConfig({
+  required Directory parentDirectory,
+  required IosBuildSigningType signingType,
+  Certificate? certificate,
+  ProvisionProfile? provisionProfile,
+  String? developerTeamId,
+  Map<String, Object>? envs,
+}) {
   final File xcConfigFile = File(
     path.join(parentDirectory.path, 'Infra.xcconfig'),
   );
 
-  final List<String> newConfig = <String>[
-    '$codeSignIdentityKey=${certificate.name}',
-    '$codeSignStyleKey=Manual',
-    '$provisionProfileKey=${provisionProfile.uuid}',
-    '$provisioningProfileSpecifierKey=${provisionProfile.name}',
-  ];
+  final StringBuffer newConfig = StringBuffer();
 
-  xcConfigFile.writeAsStringSync(newConfig.join('\n'), flush: true);
+  if (certificate != null) {
+    newConfig.writeln('$codeSignIdentityKey=${certificate.name}');
+  }
+  switch (signingType) {
+    case IosBuildSigningType.automatic:
+      newConfig.writeln('$codeSignStyleKey=Automatic');
+      break;
+    case IosBuildSigningType.manuel:
+      newConfig.writeln('$codeSignStyleKey=Manual');
+      break;
+  }
+
+  if (provisionProfile != null) {
+    newConfig
+      ..writeln('$provisionProfileKey=${provisionProfile.uuid}')
+      ..writeln('$provisioningProfileSpecifierKey=${provisionProfile.name}');
+  }
+
+  if (developerTeamId != null) {
+    newConfig.writeln('$iosDeveloperTeamIdKey=$developerTeamId');
+  }
+
+  if (envs != null) {
+    envs.entries.forEach((MapEntry<String, Object> entry) {
+      newConfig.writeln('${entry.key}=${entry.value}');
+    });
+  }
+
+  xcConfigFile.writeAsStringSync(newConfig.toString(), flush: true);
 
   return xcConfigFile;
 }
 
 ///
-void updateProjectSigningConfiguration(
+void updateIosProjectSigningConfiguration(
   final File codeSigningConfig,
   final File releaseConfig,
 ) {
@@ -51,7 +81,7 @@ void updateProjectSigningConfiguration(
 
   releaseConfig.writeAsStringSync(
     <String>[
-      ...releaseConfig.readAsLinesSync(),
+      ...releaseConfigLines,
       if (!releaseConfigLines.contains(importStatement)) importStatement,
     ].join('\n'),
     mode: FileMode.writeOnly,

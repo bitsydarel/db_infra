@@ -50,39 +50,72 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
   @override
   Future<File> build() async {
-    certificatesManager.importCertificateFileLocally(
-      configuration.iosCertificateSigningRequestPrivateKey,
-    );
+    final String? developerTeamId = configuration.iosDeveloperTeamId;
 
-    final String certificateId = configuration.iosCertificateId;
+    Certificate? certificate;
+    ProvisionProfile? provisionProfile;
 
-    final Certificate? certificate =
-        await certificatesManager.getCertificate(certificateId);
+    if (developerTeamId == null) {
+      final File? certificatePrivateKey =
+          configuration.iosCertificateSigningRequestPrivateKey;
 
-    if (certificate != null && !certificate.hasExpired()) {
-      certificatesManager.importCertificateLocally(certificate);
-    } else {
-      throw UnrecoverableException(
-        'Certificate with id ${configuration.iosCertificateId} '
-        'not found or has expired.\nRe-Run the setup command.',
-        ExitCode.tempFail.code,
+      if (certificatePrivateKey == null ||
+          !certificatePrivateKey.existsSync()) {
+        throw UnrecoverableException(
+          'iosCertificateSigningRequestPrivateKey is not set, '
+          'did you properly run the setup ?',
+          ExitCode.config.code,
+        );
+      }
+
+      certificatesManager.importCertificateFileLocally(certificatePrivateKey);
+
+      final String? certificateId = configuration.iosCertificateId;
+
+      if (certificateId == null) {
+        throw UnrecoverableException(
+          'iosCertificateId is not set, did you properly run the setup ?',
+          ExitCode.config.code,
+        );
+      }
+
+      certificate = await certificatesManager.getCertificate(certificateId);
+
+      if (certificate != null && !certificate.hasExpired()) {
+        certificatesManager.importCertificateLocally(certificate);
+      } else {
+        throw UnrecoverableException(
+          'Certificate with id $certificateId '
+          'not found or has expired.\nRe-Run the setup command.',
+          ExitCode.tempFail.code,
+        );
+      }
+
+      final String? iosProvisionProfileName =
+          configuration.iosProvisionProfileName;
+
+      if (iosProvisionProfileName == null) {
+        throw UnrecoverableException(
+          'iosCertificateId is not set, did you properly run the setup ?',
+          ExitCode.config.code,
+        );
+      }
+
+      provisionProfile = await provisionProfilesManager.getProfileWithName(
+        iosProvisionProfileName,
       );
-    }
 
-    final ProvisionProfile? provisionProfile =
-        await provisionProfilesManager.getProfileWithName(
-      configuration.iosProvisionProfileName,
-    );
-
-    if (provisionProfile != null) {
-      provisionProfilesManager.importProvisionProfileLocally(provisionProfile);
-    } else {
-      throw UnrecoverableException(
-        'Provision Profile with uuid '
-        '${configuration.iosProvisionProfileName} not found.\n'
-        'Re-Run the setup command.',
-        ExitCode.tempFail.code,
-      );
+      if (provisionProfile != null) {
+        provisionProfilesManager
+            .importProvisionProfileLocally(provisionProfile);
+      } else {
+        throw UnrecoverableException(
+          'Provision Profile with uuid '
+          '${configuration.iosProvisionProfileName} not found.\n'
+          'Re-Run the setup command.',
+          ExitCode.tempFail.code,
+        );
+      }
     }
 
     if (!configuration.iosExportOptionsPlist.existsSync()) {
@@ -96,14 +129,23 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       path.join(projectDirectory.path, 'ios/Flutter'),
     );
 
-    final File codeSigningConfig =
-        createCodeSigningXCConfig(iosFlutterDir, provisionProfile, certificate);
+    final Map<String, Object>? environmentVariables =
+        await environmentVariableHandler?.call();
+
+    final File codeSigningConfig = createCodeSigningXCConfig(
+      parentDirectory: iosFlutterDir,
+      signingType: configuration.iosSigningType,
+      developerTeamId: developerTeamId,
+      provisionProfile: provisionProfile,
+      certificate: certificate,
+      envs: environmentVariables,
+    );
 
     final File releaseConfig = File(
       path.join(iosFlutterDir.path, 'Release.xcconfig'),
     );
 
-    updateProjectSigningConfiguration(codeSigningConfig, releaseConfig);
+    updateIosProjectSigningConfiguration(codeSigningConfig, releaseConfig);
 
     final List<String>? dartDefines =
         await environmentVariableHandler?.asDartDefines();
@@ -140,10 +182,15 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         configuration.iosBuildOutputType.outputFile(projectDirectory);
 
     if (outputFile == null) {
-      throw UnrecoverableException('Could not find ', ExitCode.software.code);
+      throw UnrecoverableException(
+        'Could not find build ios ${configuration.iosBuildOutputType.name}',
+        ExitCode.software.code,
+      );
     }
 
-    provisionProfilesManager.deleteProvisionProfileLocally(provisionProfile);
+    if (provisionProfile != null) {
+      provisionProfilesManager.deleteProvisionProfileLocally(provisionProfile);
+    }
     certificatesManager.cleanupLocally();
 
     return outputFile;

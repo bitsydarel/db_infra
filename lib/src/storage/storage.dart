@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/storage/disk_storage.dart';
 import 'package:db_infra/src/storage/ftp_storage.dart';
+import 'package:db_infra/src/storage/google_cloud_storage.dart';
 import 'package:db_infra/src/utils/utils.dart';
 import 'package:io/io.dart';
 
@@ -34,6 +35,9 @@ enum StorageType {
 
   ///
   ftp,
+
+  ///
+  googleCloud,
 }
 
 ///
@@ -41,7 +45,7 @@ extension StringStorageTypeExtension on String {
   ///
   StorageType asStorageType() {
     return StorageType.values.firstWhere(
-          (StorageType type) => type.name == this,
+      (StorageType type) => type.name == this,
     );
   }
 }
@@ -59,6 +63,8 @@ extension StorageByTypeFactoryExtension on StorageType {
         return DiskStorage.fromJson(json, logger, infraDirectory);
       case StorageType.ftp:
         return FtpStorage.fromJson(json, logger, infraDirectory);
+      case StorageType.googleCloud:
+        return GoogleCloudStorage.fromJson(json, logger, infraDirectory);
       default:
         throw UnsupportedError('$name is not supported');
     }
@@ -74,6 +80,9 @@ extension StorageByTypeFactoryExtension on StorageType {
     final String? ftpServerUrl,
     final int? ftpServerPort,
     final String? ftpServerFolderName,
+    final String? gcloudProjectId,
+    final String? gcloudBucketName,
+    final File? gcloudServiceAccountFile,
   }) {
     switch (this) {
       case StorageType.disk:
@@ -109,7 +118,27 @@ extension StorageByTypeFactoryExtension on StorageType {
 
         throw UnrecoverableException(
           'Infra storage type $name '
-          'request but ftp username, password, url need to be specified',
+          'requested but ftp username, password, url need to be specified',
+          ExitCode.config.code,
+        );
+      case StorageType.googleCloud:
+        if (gcloudProjectId != null &&
+            gcloudBucketName != null &&
+            gcloudServiceAccountFile != null &&
+            gcloudServiceAccountFile.existsSync()) {
+          return GoogleCloudStorage(
+            bucketName: gcloudBucketName,
+            serviceAccount: gcloudServiceAccountFile.readAsStringSync(),
+            gcloudProjectId: gcloudProjectId,
+            logger: infraLogger,
+            infraDirectory: infraDirectory,
+          );
+        }
+        throw UnrecoverableException(
+          'Infra storage type $name '
+          'requested but $infraGcloudProjectIdArg, '
+          '$infraGcloudProjectBucketNameArg, '
+          '$infraGcloudProjectServiceAccountFileArg need to be specified',
           ExitCode.config.code,
         );
       default:

@@ -8,10 +8,12 @@ import 'package:db_infra/src/apple/device/device_manager.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/build_output_type.dart';
+import 'package:db_infra/src/build_signing_type.dart';
 import 'package:db_infra/src/commands/base_command.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/encryptor/encryptor.dart';
 import 'package:db_infra/src/logger.dart';
+import 'package:db_infra/src/setup_executor/android_setup_executor.dart';
 import 'package:db_infra/src/setup_executor/setup_executor.dart';
 import 'package:db_infra/src/storage/storage.dart';
 import 'package:db_infra/src/utils/utils.dart';
@@ -26,11 +28,6 @@ class InfraSetupCommand extends BaseCommand {
         appIdArg,
         help: 'Specify the application id, '
             'that will be used for both iOS & Android.',
-      )
-      ..addOption(
-        androidAppIdArg,
-        help: 'Specify the android application id that '
-            'will be used for distribution.',
       )
       ..addOption(
         iosAppIdArg,
@@ -97,6 +94,43 @@ class InfraSetupCommand extends BaseCommand {
         help: 'Specify the Distribution certificate id.',
       )
       ..addOption(
+        iosDevelopmentTeamIdArg,
+        help: 'Specify the infrastructure ios development team id',
+      )
+      ..addOption(
+        infraIosBuildOutputTypeArg,
+        help: 'Specify the infrastructure ios build output type.',
+        allowed: IosBuildOutputType.values.asNameList(),
+        defaultsTo: IosBuildOutputType.ipa.name,
+      )
+      ..addOption(
+        androidAppIdArg,
+        help: 'Specify the android application id that '
+            'will be used for distribution.',
+      )
+      ..addOption(
+        infraAndroidKeyAliasArg,
+        help: 'Specify the infrastructure android key alias.',
+      )
+      ..addOption(
+        infraAndroidKeyPasswordArg,
+        help: 'Specify the infrastructure android key password.',
+      )
+      ..addOption(
+        infraAndroidStoreFileArg,
+        help: 'Specify the infrastructure android store file.',
+      )
+      ..addOption(
+        infraAndroidStorePasswordArg,
+        help: 'Specify the infrastructure android store password.',
+      )
+      ..addOption(
+        infraAndroidBuildOutputTypeArg,
+        help: 'Specify the infrastructure android build output type',
+        allowed: AndroidBuildOutputType.values.asNameList(),
+        defaultsTo: AndroidBuildOutputType.apk.name,
+      )
+      ..addOption(
         infraStorageTypeArg,
         help: 'Specify the infrastructure storage type',
         allowed: StorageType.values.asNameList(),
@@ -109,21 +143,13 @@ class InfraSetupCommand extends BaseCommand {
         defaultsTo: EncryptorType.base64.name,
       )
       ..addOption(
+        infraAesEncryptorPasswordArg,
+        help: 'Specify the infrastructure AES encryptor password.',
+      )
+      ..addOption(
         infraDiskStorageLocationArg,
         help: 'Specify the infrastructure disk storage location',
         defaultsTo: '.infra_disk_storage',
-      )
-      ..addOption(
-        infraIosBuildOutputTypeArg,
-        help: 'Specify the infrastructure ios build output type',
-        allowed: IosBuildOutputType.values.asNameList(),
-        defaultsTo: IosBuildOutputType.ipa.name,
-      )
-      ..addOption(
-        infraAndroidBuildOutputTypeArg,
-        help: 'Specify the infrastructure android build output type',
-        allowed: AndroidBuildOutputType.values.asNameList(),
-        defaultsTo: AndroidBuildOutputType.apk.name,
       )
       ..addOption(
         infraFtpUsernameArg,
@@ -145,6 +171,18 @@ class InfraSetupCommand extends BaseCommand {
       ..addOption(
         infraFtpFolderNameArg,
         help: 'Specify the infrastructure ftp storage folder name.',
+      )
+      ..addOption(
+        infraGcloudProjectIdArg,
+        help: 'Specify the infrastructure gcloud project id.',
+      )
+      ..addOption(
+        infraGcloudProjectBucketNameArg,
+        help: 'Specify the infrastructure gcloud project bucket name.',
+      )
+      ..addOption(
+        infraGcloudProjectServiceAccountFileArg,
+        help: 'Specify the infrastructure gcloud project service account.',
       );
   }
 
@@ -169,9 +207,9 @@ class InfraSetupCommand extends BaseCommand {
     final Directory infraDir = projectDir.createInfraDirectory();
 
     final InfraSetupConfiguration configuration = parseConfigurationArguments(
-      commandArgs,
-      infraDir,
-      logger,
+      commandArgs: commandArgs,
+      infraDir: infraDir,
+      logger: logger,
     );
 
     final CertificatesManager certificatesManager =
@@ -198,22 +236,78 @@ class InfraSetupCommand extends BaseCommand {
       'Setting up ios infrastructure for ${configuration.iosAppId}...',
     );
 
-    final InfraBuildConfiguration buildConfiguration =
+    final InfraBuildConfiguration iosBuildConfiguration =
         await iosSetupExecutor.setupInfra();
 
+    final AndroidSetupExecutor androidSetupExecutor = AndroidSetupExecutor(
+      configuration: configuration,
+      infraDirectory: infraDir,
+      logger: logger,
+    );
+
+    logger.logInfo(
+      'Setting up android infrastructure for ${configuration.androidAppId}...',
+    );
+
+    final InfraBuildConfiguration androidBuildConfiguration =
+        await androidSetupExecutor.setupInfra();
+
+    final File? iosCertificateSigningRequest =
+        iosBuildConfiguration.iosCertificateSigningRequest;
+
+    final File? iosCertificateSigningRequestPrivateKey =
+        iosBuildConfiguration.iosCertificateSigningRequestPrivateKey;
+
     final List<File> filesToEncrypt = <File>[
-      buildConfiguration.iosCertificateSigningRequest,
-      buildConfiguration.iosCertificateSigningRequestPrivateKey,
-      buildConfiguration.iosExportOptionsPlist,
-      buildConfiguration.iosAppStoreConnectKey,
+      if (iosCertificateSigningRequest != null) iosCertificateSigningRequest,
+      if (iosCertificateSigningRequestPrivateKey != null)
+        iosCertificateSigningRequestPrivateKey,
+      iosBuildConfiguration.iosExportOptionsPlist,
+      iosBuildConfiguration.iosAppStoreConnectKey,
+      androidBuildConfiguration.androidStoreFile,
     ];
 
     final List<File> encryptedFiles =
         await configuration.encryptor.encryptFiles(filesToEncrypt);
 
-    await buildConfiguration.storage.saveFiles(encryptedFiles);
+    await configuration.storage.saveFiles(encryptedFiles);
 
-    await saveConfiguration(buildConfiguration, configurationFile);
+    await saveConfiguration(
+      InfraBuildConfiguration(
+        iosAppId: iosBuildConfiguration.iosAppId,
+        iosSigningType: iosBuildConfiguration.iosSigningType,
+        iosBuildOutputType: iosBuildConfiguration.iosBuildOutputType,
+        iosAppStoreConnectKey: iosBuildConfiguration.iosAppStoreConnectKey,
+        iosExportOptionsPlist: iosBuildConfiguration.iosExportOptionsPlist,
+        iosAppStoreConnectKeyId: iosBuildConfiguration.iosAppStoreConnectKeyId,
+        iosProvisionProfileType: iosBuildConfiguration.iosProvisionProfileType,
+        iosAppStoreConnectKeyIssuer:
+            iosBuildConfiguration.iosAppStoreConnectKeyIssuer,
+        iosCertificateSigningRequest:
+            iosBuildConfiguration.iosCertificateSigningRequest,
+        iosCertificateSigningRequestPrivateKey:
+            iosBuildConfiguration.iosCertificateSigningRequestPrivateKey,
+        iosCertificateSigningRequestName:
+            iosBuildConfiguration.iosCertificateSigningRequestName,
+        iosCertificateSigningRequestEmail:
+            iosBuildConfiguration.iosCertificateSigningRequestEmail,
+        iosProvisionProfileName: iosBuildConfiguration.iosProvisionProfileName,
+        iosCertificateId: iosBuildConfiguration.iosCertificateId,
+        iosDeveloperTeamId: iosBuildConfiguration.iosDeveloperTeamId,
+        androidAppId: androidBuildConfiguration.androidAppId,
+        androidKeyAlias: androidBuildConfiguration.androidKeyAlias,
+        androidKeyPassword: androidBuildConfiguration.androidKeyPassword,
+        androidStoreFile: androidBuildConfiguration.androidStoreFile,
+        androidStorePassword: androidBuildConfiguration.androidStorePassword,
+        androidBuildOutputType:
+            androidBuildConfiguration.androidBuildOutputType,
+        storage: configuration.storage,
+        encryptor: configuration.encryptor,
+        storageType: configuration.storageType,
+        encryptorType: configuration.encryptorType,
+      ),
+      configurationFile,
+    );
 
     logger.logInfo(
       'Completed set up ios infrastructure for ${configuration.iosAppId} '
@@ -225,11 +319,11 @@ class InfraSetupCommand extends BaseCommand {
 
   ///
   @visibleForTesting
-  InfraSetupConfiguration parseConfigurationArguments(
-    ArgResults commandArgs,
-    Directory infraDir,
-    Logger logger,
-  ) {
+  InfraSetupConfiguration parseConfigurationArguments({
+    required ArgResults commandArgs,
+    required Directory infraDir,
+    required Logger logger,
+  }) {
     final String? appId = commandArgs.parseOptionalString(appIdArg);
 
     String? androidAppId = commandArgs.parseOptionalString(androidAppIdArg);
@@ -273,7 +367,8 @@ class InfraSetupCommand extends BaseCommand {
         (iosCSRName == null && iosCSREmail != null)) {
       throw const FormatException(
         '$iosCertificateSigningRequestEmailArg and '
-        '$iosCertificateSigningRequestNameArg need to be specified together',
+        '$iosCertificateSigningRequestNameArg need to be '
+        'specified together',
       );
     }
 
@@ -283,9 +378,16 @@ class InfraSetupCommand extends BaseCommand {
       '$iOSAppId-csr-private-key',
     );
 
+    final String iosProvisionProfileType =
+        commandArgs.parseString(iosProvisionProfileTypeArg);
+
+    final String? iosDevelopmentTeamId =
+        commandArgs.parseOptionalString(iosDevelopmentTeamIdArg);
+
     if (iosCSRPrivateKeyPath == null &&
         iosCSREmail == null &&
-        iosCSRName == null) {
+        iosCSRName == null &&
+        iosDevelopmentTeamId == null) {
       throw const FormatException(
         'CSR private-key must be specified\nSpecify '
         '($iosCertificateSigningRequestPrivateKeyPathArg or '
@@ -293,7 +395,8 @@ class InfraSetupCommand extends BaseCommand {
         'to use a existing certificates.'
         '\nSpecify ($iosCertificateSigningRequestEmailArg and '
         '$iosCertificateSigningRequestNameArg) '
-        'to create new one CSR and certificates',
+        'to create new one CSR and certificates or '
+        'use automatic signing by specifying the team id',
       );
     }
 
@@ -347,8 +450,16 @@ class InfraSetupCommand extends BaseCommand {
     final String androidBuildOutputType =
         commandArgs.parseString(infraAndroidBuildOutputTypeArg);
 
-    final String iosProvisionProfileType =
-        commandArgs.parseString(iosProvisionProfileTypeArg);
+    final String androidKeyAlias =
+        commandArgs.parseString(infraAndroidKeyAliasArg);
+
+    final String androidKeyPassword =
+        commandArgs.parseString(infraAndroidKeyPasswordArg);
+
+    final File androidStoreFile = parseAndroidStoreFilePath();
+
+    final String androidStorePassword =
+        commandArgs.parseString(infraAndroidStorePasswordArg);
 
     return InfraSetupConfiguration(
       androidAppId: androidAppId!,
@@ -362,6 +473,10 @@ class InfraSetupCommand extends BaseCommand {
       iosCertificateSigningRequestName: iosCSRName,
       iosProvisionProfileName: iosProvisionProfileName,
       iosProvisionProfileType: iosProvisionProfileType.fromKey(),
+      androidKeyAlias: androidKeyAlias,
+      androidKeyPassword: androidKeyPassword,
+      androidStoreFile: androidStoreFile,
+      androidStorePassword: androidStorePassword,
       iosCertificateId: iosCertificateId,
       encryptorType: infraEncryptorType,
       encryptor: infraEncryptor,
@@ -369,7 +484,35 @@ class InfraSetupCommand extends BaseCommand {
       storage: infraStorage,
       iosBuildOutputType: iosBuildOutputType.asIosBuildOutputType(),
       androidBuildOutputType: androidBuildOutputType.asAndroidBuildOutputType(),
+      iosDeveloperTeamId: iosDevelopmentTeamId,
+      iosBuildSigningType: iosDevelopmentTeamId != null
+          ? IosBuildSigningType.automatic
+          : IosBuildSigningType.manuel,
     );
+  }
+
+  ///
+  @visibleForTesting
+  File parseAndroidStoreFilePath() {
+    final String? androidStoreFilePath =
+        argResults?.parseString(infraAndroidStoreFileArg);
+
+    if (androidStoreFilePath == null) {
+      throw const FormatException(
+        '$infraAndroidStoreFileArg need to be specified',
+      );
+    }
+
+    final File androidStoreFile = File(androidStoreFilePath);
+
+    if (!androidStoreFile.existsSync()) {
+      throw const FormatException(
+        'Android store file does not exist\n'
+        'Please provide a valid one using $infraAndroidStoreFileArg ',
+      );
+    }
+
+    return androidStoreFile;
   }
 
   ///

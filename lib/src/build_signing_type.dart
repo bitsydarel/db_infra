@@ -1,0 +1,8 @@
+///
+enum IosBuildSigningType {
+  ///
+  automatic,
+
+  ///
+  manuel,
+}

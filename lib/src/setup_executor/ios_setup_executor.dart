@@ -11,6 +11,7 @@ import 'package:db_infra/src/apple/device/device_manager.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
+import 'package:db_infra/src/build_signing_type.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/setup_executor/setup_executor.dart';
@@ -55,40 +56,75 @@ class IosSetupExecutor extends SetupExecutor {
   Future<InfraBuildConfiguration> setupInfra() async {
     final String appId = configuration.iosAppId;
 
-    final String? provisionProfileName =
-        configuration.iosProvisionProfileName?.trim();
+    final String? developerTeamId = configuration.iosDeveloperTeamId;
 
-    CertificateSigningRequest? csr = getCertificateSigningRequestFile();
+    final ProvisionProfileType provisionProfileType =
+        configuration.iosProvisionProfileType;
 
-    _ProvisionProfileWithCertificateSha1? data;
+    final IosBuildSigningType signingType = configuration.iosBuildSigningType;
 
-    if (csr != null && provisionProfileName != null) {
-      data =
-          await getExistingProvisionProfile(appId, provisionProfileName, csr);
-    } else if (csr != null) {
-      data = await createAndInstallProvisionProfile(appId, csr);
+    final File exportOptionsPlist;
+    final InfraBuildConfiguration buildConfiguration;
+
+    if (developerTeamId != null) {
+      exportOptionsPlist = profilesManager.exportOptionsPlist(
+        appId: appId,
+        signingType: signingType,
+        provisionProfileType: provisionProfileType,
+      );
+
+      buildConfiguration = _createBuildConfiguration(
+        signingType: signingType,
+        iosDeveloperTeamId: developerTeamId,
+        exportOptionsPlist: exportOptionsPlist,
+      );
     } else {
-      csr = createCertificateSigningRequestFile();
+      final String? provisionProfileName =
+          configuration.iosProvisionProfileName?.trim();
 
-      data = await createAndInstallProvisionProfile(appId, csr);
-    }
+      CertificateSigningRequest? csr = getCertificateSigningRequestFile();
 
-    if (csr == null || data == null) {
-      throw UnrecoverableException(
-        'CSR and Private Key could not be found or created.\n'
-        'CSR Private Key provided: '
-        '${configuration.iosCertificateSigningRequestPrivateKeyPath}\n'
-        'CSR Name: ${configuration.iosCertificateSigningRequestName}\n'
-        'CSR Email: ${configuration.iosCertificateSigningRequestEmail}',
-        ExitCode.config.code,
+      _ProvisionProfileWithCertificateSha1? data;
+
+      if (csr != null && provisionProfileName != null) {
+        data =
+            await getExistingProvisionProfile(appId, provisionProfileName, csr);
+      } else if (csr != null) {
+        data = await createAndInstallProvisionProfile(appId, csr);
+      } else {
+        csr = createCertificateSigningRequestFile();
+
+        data = await createAndInstallProvisionProfile(appId, csr);
+      }
+
+      if (csr == null || data == null) {
+        throw UnrecoverableException(
+          'CSR and Private Key could not be found or created.\n'
+          'CSR Private Key provided: '
+          '${configuration.iosCertificateSigningRequestPrivateKeyPath}\n'
+          'CSR Name: ${configuration.iosCertificateSigningRequestName}\n'
+          'CSR Email: ${configuration.iosCertificateSigningRequestEmail}',
+          ExitCode.config.code,
+        );
+      }
+
+      exportOptionsPlist = profilesManager.exportOptionsPlist(
+        appId: appId,
+        certificateSha1: data.sha1,
+        provisionProfile: data.profile,
+        developerTeamId: developerTeamId,
+        provisionProfileType: provisionProfileType,
+        signingType: configuration.iosBuildSigningType,
+      );
+
+      buildConfiguration = _createBuildConfiguration(
+        profileData: data,
+        signingType: signingType,
+        certificateSigningRequest: csr,
+        iosDeveloperTeamId: developerTeamId,
+        exportOptionsPlist: exportOptionsPlist,
       );
     }
-
-    final File exportOptionsPlist = profilesManager
-        .exportOptionsPlist(appId, data.profile, certificateSha1: data.sha1);
-
-    final InfraBuildConfiguration buildConfiguration =
-        _createBuildConfiguration(csr, data, exportOptionsPlist);
 
     certificatesManager.cleanupLocally();
 
@@ -308,33 +344,43 @@ class IosSetupExecutor extends SetupExecutor {
     );
   }
 
-  InfraBuildConfiguration _createBuildConfiguration(
-    final CertificateSigningRequest csr,
-    final _ProvisionProfileWithCertificateSha1 profileData,
-    final File exportOptionsPlist,
-  ) {
+  InfraBuildConfiguration _createBuildConfiguration({
+    required final File exportOptionsPlist,
+    required final IosBuildSigningType signingType,
+    final CertificateSigningRequest? certificateSigningRequest,
+    final _ProvisionProfileWithCertificateSha1? profileData,
+    final String? iosDeveloperTeamId,
+  }) {
     return InfraBuildConfiguration(
       androidAppId: configuration.androidAppId,
       iosAppId: configuration.iosAppId,
       iosAppStoreConnectKeyId: configuration.iosAppStoreConnectKeyId,
       iosAppStoreConnectKeyIssuer: configuration.iosAppStoreConnectKeyIssuer,
       iosAppStoreConnectKey: configuration.iosAppStoreConnectKey,
-      iosCertificateSigningRequest: csr.request,
-      iosCertificateSigningRequestPrivateKey: csr.privateKey,
+      iosCertificateSigningRequest: certificateSigningRequest?.request,
+      iosCertificateSigningRequestPrivateKey:
+          certificateSigningRequest?.privateKey,
       iosCertificateSigningRequestName:
           configuration.iosCertificateSigningRequestName,
       iosCertificateSigningRequestEmail:
           configuration.iosCertificateSigningRequestEmail,
-      iosProvisionProfileName: profileData.profile.name,
-      iosProvisionProfileType: profileData.profile.type,
-      iosCertificateId: profileData.profile.certificates.first.id,
+      iosProvisionProfileName: profileData?.profile.name,
+      iosProvisionProfileType:
+          profileData?.profile.type ?? configuration.iosProvisionProfileType,
+      iosCertificateId: profileData?.profile.certificates.first.id,
+      iosDeveloperTeamId: iosDeveloperTeamId,
       iosExportOptionsPlist: exportOptionsPlist,
+      iosSigningType: signingType,
       encryptor: configuration.encryptor,
       storage: configuration.storage,
       storageType: configuration.storageType,
       encryptorType: configuration.encryptorType,
       iosBuildOutputType: configuration.iosBuildOutputType,
       androidBuildOutputType: configuration.androidBuildOutputType,
+      androidKeyAlias: configuration.androidKeyAlias,
+      androidKeyPassword: configuration.androidKeyPassword,
+      androidStoreFile: configuration.androidStoreFile,
+      androidStorePassword: configuration.androidStorePassword,
     );
   }
 }

@@ -81,7 +81,6 @@ class Base64Encryptor extends Encryptor {
     return utf8.decode(base64Decode(encryptedText));
   }
 
-  ///
   @override
   JsonMap toJson() => <String, Object?>{};
 }

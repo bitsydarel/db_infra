@@ -5,7 +5,7 @@ import 'dart:io';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:meta/meta.dart';
 
-export 'ios/flutter_ios_build_executor.dart';
+export 'flutter_ios_build_executor.dart';
 
 ///
 abstract class BuildExecutor {

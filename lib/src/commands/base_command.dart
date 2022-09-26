@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:args/args.dart';
 import 'package:args/command_runner.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
+import 'package:db_infra/src/encryptor/aes_encryptor.dart';
 import 'package:db_infra/src/encryptor/encryptor.dart';
 import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/storage/storage.dart';
@@ -16,11 +17,12 @@ import 'package:meta/meta.dart';
 abstract class BaseCommand extends Command<void> {
   /// Load the infrastructure configuration.
   @protected
-  Future<InfraBuildConfiguration> loadConfiguration(
-    File configuration,
-    Directory infraDirectory,
-    Logger logger,
-  ) async {
+  Future<InfraBuildConfiguration> loadConfiguration({
+    required File configuration,
+    required Directory infraDirectory,
+    required Logger logger,
+    String? aesPassword,
+  }) async {
     final String fileContent = configuration.readAsStringSync();
 
     final Object? rawJson = jsonDecode(fileContent);
@@ -30,6 +32,7 @@ abstract class BaseCommand extends Command<void> {
         json: rawJson,
         logger: logger,
         infraDir: infraDirectory,
+        aesPassword: aesPassword,
       );
     }
 
@@ -129,8 +132,18 @@ extension ArgResultsExtension on ArgResults {
     switch (infraEncryptorType) {
       case EncryptorType.base64:
         return Base64Encryptor(infraDirectory);
-      default:
-        throw UnsupportedError('${infraEncryptorType.name} is unsupported');
+      case EncryptorType.aes:
+        final String? aesPassword =
+            parseOptionalString(infraAesEncryptorPasswordArg);
+
+        if (aesPassword == null) {
+          throw UnrecoverableException(
+            'infra encryptor $name need a password to be provided.',
+            ExitCode.config.code,
+          );
+        }
+
+        return AesEncryptor(aesPassword, infraDirectory);
     }
   }
 
@@ -157,6 +170,13 @@ extension ArgResultsExtension on ArgResults {
     final String? ftpFolderName = parseOptionalString(infraFtpFolderNameArg);
     final String? ftpServerPort = parseOptionalString(infraFtpPortArg);
 
+    final String? gcloudProjectId =
+        parseOptionalString(infraGcloudProjectIdArg);
+    final String? gcloudProjectBucketName =
+        parseOptionalString(infraGcloudProjectBucketNameArg);
+    final String? gcloudProjectServiceAccountFile =
+        parseOptionalString(infraGcloudProjectServiceAccountFileArg);
+
     return infraStorageType.from(
       infraLogger: logger,
       infraDirectory: infraDirectory,
@@ -165,6 +185,12 @@ extension ArgResultsExtension on ArgResults {
       ftpServerUrl: ftpServerUrl,
       ftpServerPort: ftpServerPort != null ? int.parse(ftpServerPort) : null,
       ftpServerFolderName: ftpFolderName ?? 'credentials',
+      gcloudProjectId: gcloudProjectId,
+      gcloudBucketName: gcloudProjectBucketName,
+      gcloudServiceAccountFile:
+          gcloudProjectServiceAccountFile?.trim().isNotEmpty == true
+              ? File(gcloudProjectServiceAccountFile!)
+              : null,
       storageDirectory: infraDiskStorageLocation?.trim().isNotEmpty == true
           ? Directory(infraDiskStorageLocation!)
           : null,
