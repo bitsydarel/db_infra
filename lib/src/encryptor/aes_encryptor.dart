@@ -104,9 +104,13 @@ class AesEncryptor extends Encryptor {
 
       final File decryptedFile = File(
         filename.substring(0, filename.lastIndexOf(_encryptedFileExtension)),
-      )..writeAsStringSync(
-          encrypter.decrypt64(encryptedFileContent, iv: iv),
+      )..writeAsBytesSync(
+          encrypter.decryptBytes(
+            lib_encrypt.Encrypted.fromBase64(encryptedFileContent),
+            iv: iv,
+          ),
           flush: true,
+          mode: FileMode.writeOnly,
         );
 
       decryptedFiles.add(decryptedFile);

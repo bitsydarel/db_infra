@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:db_infra/src/apple/certificates/certificate.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
 import 'package:db_infra/src/build_signing_type.dart';
+import 'package:db_infra/src/logger.dart';
 import 'package:path/path.dart' as path;
 
 ///
@@ -24,6 +25,7 @@ const String iosDeveloperTeamIdKey = 'DEVELOPMENT_TEAM';
 File createCodeSigningXCConfig({
   required Directory parentDirectory,
   required IosBuildSigningType signingType,
+  required Logger logger,
   Certificate? certificate,
   ProvisionProfile? provisionProfile,
   String? developerTeamId,
@@ -59,7 +61,13 @@ File createCodeSigningXCConfig({
 
   if (envs != null) {
     envs.entries.forEach((MapEntry<String, Object> entry) {
-      newConfig.writeln('${entry.key}=${entry.value}');
+      if (!entry.key.contains('.')) {
+        newConfig.writeln('${entry.key}=${entry.value}');
+      } else {
+        logger.logInfo(
+          'Key ${entry.key} cannot be added to ${xcConfigFile.path}',
+        );
+      }
     });
   }
 

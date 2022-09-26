@@ -125,13 +125,15 @@ class InfraBuildCommand extends BaseCommand {
       environmentVariableHandler: envHandler,
     ).build();
 
+    await buildDistributor.distribute(iosFlutterOutput);
+
     final File androidFlutterOutput = await FlutterAndroidBuildExecutor(
       logger: logger,
       configuration: buildConfiguration,
       projectDirectory: projectDir,
+      environmentVariableHandler: envHandler,
     ).build();
 
-    await buildDistributor.distribute(iosFlutterOutput);
     await buildDistributor.distribute(androidFlutterOutput);
 
     await cleanup(buildConfiguration, infraDir);

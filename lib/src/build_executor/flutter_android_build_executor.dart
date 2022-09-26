@@ -68,6 +68,7 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
         '--release',
         if (dartDefines != null) ...dartDefines
       ],
+      <String, String>{'CI': 'true'},
     );
 
     Directory.current = oldPath;
@@ -114,7 +115,7 @@ void updateAndroidProjectSigningConfigurationO(
       if (environmentVariables != null)
         ...environmentVariables.entries.map((MapEntry<String, Object> entry) {
           return '${entry.key}=${entry.value}';
-        }),
+        }).toList(),
     ].join('\n'),
     mode: FileMode.writeOnly,
     flush: true,

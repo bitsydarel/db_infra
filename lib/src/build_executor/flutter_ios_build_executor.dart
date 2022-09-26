@@ -135,6 +135,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     final File codeSigningConfig = createCodeSigningXCConfig(
       parentDirectory: iosFlutterDir,
       signingType: configuration.iosSigningType,
+      logger: logger,
       developerTeamId: developerTeamId,
       provisionProfile: provisionProfile,
       certificate: certificate,
@@ -163,8 +164,9 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         '--release',
         '--export-options-plist',
         configuration.iosExportOptionsPlist.path,
-        if (dartDefines != null) ...dartDefines
+        if (dartDefines != null) ...dartDefines,
       ],
+      <String, String>{'CI': 'true'},
     );
 
     Directory.current = oldPath;
