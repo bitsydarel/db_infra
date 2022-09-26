@@ -27,13 +27,13 @@ class InfraBuildCommand extends BaseCommand {
   ///
   InfraBuildCommand() {
     argParser
-      ..addOption(
+      ..addMultiOption(
         infraBuildDistributorTypeArg,
         help: 'Specify the infrastructure build distributor type.',
         allowed: BuildDistributorType.values.map((BuildDistributorType e) {
           return e.name;
         }),
-        defaultsTo: BuildDistributorType.directory.name,
+        defaultsTo: <String>[BuildDistributorType.directory.name],
       )
       ..addOption(
         infraBuildEnvVariableTypeArg,
@@ -80,15 +80,20 @@ class InfraBuildCommand extends BaseCommand {
       aesPassword: aesEncryptorPassword,
     );
 
-    final BuildDistributorType buildDistributorType =
-        _getBuildDistributorType(commandArgs);
+    final List<BuildDistributorType> buildDistributorTypes =
+        _getBuildDistributorTypes(commandArgs);
 
-    final BuildDistributor buildDistributor = _getBuildDistributor(
-      commandArgs,
-      logger,
-      buildConfiguration,
-      buildDistributorType,
-    );
+    final List<BuildDistributor> buildDistributors = buildDistributorTypes.map((
+      BuildDistributorType e,
+    ) {
+      return _getBuildDistributor(
+        commandArgs,
+        logger,
+        projectDir,
+        buildConfiguration,
+        e,
+      );
+    }).toList();
 
     final EnvironmentVariableHandlerType? envHandlerType =
         _getEnvironmentVariableType(commandArgs);
@@ -125,7 +130,16 @@ class InfraBuildCommand extends BaseCommand {
       environmentVariableHandler: envHandler,
     ).build();
 
-    await buildDistributor.distribute(iosFlutterOutput);
+    await Future.forEach(
+      buildDistributors,
+      (BuildDistributor distributor) async {
+        switch (distributor.buildDistributorType) {
+          case BuildDistributorType.directory:
+          case BuildDistributorType.appStoreConnect:
+            return distributor.distribute(iosFlutterOutput);
+        }
+      },
+    );
 
     final File androidFlutterOutput = await FlutterAndroidBuildExecutor(
       logger: logger,
@@ -134,21 +148,37 @@ class InfraBuildCommand extends BaseCommand {
       environmentVariableHandler: envHandler,
     ).build();
 
-    await buildDistributor.distribute(androidFlutterOutput);
+    await Future.forEach(
+      buildDistributors,
+      (BuildDistributor distributor) async {
+        switch (distributor.buildDistributorType) {
+          case BuildDistributorType.directory:
+            return distributor.distribute(androidFlutterOutput);
+          case BuildDistributorType.appStoreConnect:
+            return Future<void>.value();
+        }
+      },
+    );
 
     await cleanup(buildConfiguration, infraDir);
   }
 
-  BuildDistributorType _getBuildDistributorType(ArgResults args) {
-    final String buildDistributorType =
-        args.parseString(infraBuildDistributorTypeArg);
+  List<BuildDistributorType> _getBuildDistributorTypes(ArgResults args) {
+    final Object? argumentValue = args[infraBuildDistributorTypeArg];
 
-    return buildDistributorType.asBuildDistributorType();
+    if (argumentValue is List<String> && argumentValue.isNotEmpty) {
+      return argumentValue
+          .map((String e) => e.asBuildDistributorType())
+          .toList();
+    }
+
+    throw ArgumentError('$infraBuildDistributorTypeArg need to be specified');
   }
 
   BuildDistributor _getBuildDistributor(
     final ArgResults args,
     final Logger logger,
+    final Directory projectDirectory,
     final InfraBuildConfiguration configuration,
     final BuildDistributorType buildDistributorType,
   ) {
@@ -157,6 +187,7 @@ class InfraBuildCommand extends BaseCommand {
 
     return buildDistributorType.toDistributor(
       infraLogger: logger,
+      projectDirectory: projectDirectory,
       configuration: configuration,
       outputDirectoryPath: outputDirectoryPath,
     );

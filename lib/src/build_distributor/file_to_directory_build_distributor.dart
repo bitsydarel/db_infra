@@ -18,7 +18,8 @@ class FileToDirectoryBuildDistributor extends BuildDistributor {
     this.buildOutputDirectory,
     this.logger,
     InfraBuildConfiguration configuration,
-  ) : super(configuration);
+    BuildDistributorType buildDistributorType,
+  ) : super(buildDistributorType, configuration);
 
   @override
   Future<void> distribute(File output) async {

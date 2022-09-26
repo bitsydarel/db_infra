@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:db_infra/src/apple/certificates/certificate.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
+import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/build_signing_type.dart';
 import 'package:db_infra/src/logger.dart';
 import 'package:path/path.dart' as path;
@@ -25,6 +26,7 @@ const String iosDeveloperTeamIdKey = 'DEVELOPMENT_TEAM';
 File createCodeSigningXCConfig({
   required Directory parentDirectory,
   required IosBuildSigningType signingType,
+  required ProvisionProfileType provisionProfileType,
   required Logger logger,
   Certificate? certificate,
   ProvisionProfile? provisionProfile,
@@ -40,6 +42,16 @@ File createCodeSigningXCConfig({
   if (certificate != null) {
     newConfig.writeln('$codeSignIdentityKey=${certificate.name}');
   }
+  // else {
+  //   final String codeSignIdentity = provisionProfileType.isDevelopment()
+  //       ? 'Apple Development'
+  //       : 'Apple Distribution';
+  //
+  //   newConfig.writeln(
+  //     '$codeSignIdentityKey=$codeSignIdentity',
+  //   );
+  // }
+
   switch (signingType) {
     case IosBuildSigningType.automatic:
       newConfig.writeln('$codeSignStyleKey=Automatic');
@@ -53,6 +65,8 @@ File createCodeSigningXCConfig({
     newConfig
       ..writeln('$provisionProfileKey=${provisionProfile.uuid}')
       ..writeln('$provisioningProfileSpecifierKey=${provisionProfile.name}');
+  } else if ( developerTeamId != null) {
+    newConfig.writeln('$provisioningProfileSpecifierKey=Automatic');
   }
 
   if (developerTeamId != null) {

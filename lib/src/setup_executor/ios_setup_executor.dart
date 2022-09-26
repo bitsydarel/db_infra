@@ -70,6 +70,7 @@ class IosSetupExecutor extends SetupExecutor {
       exportOptionsPlist = profilesManager.exportOptionsPlist(
         appId: appId,
         signingType: signingType,
+        developerTeamId: developerTeamId,
         provisionProfileType: provisionProfileType,
       );
 
@@ -110,11 +111,11 @@ class IosSetupExecutor extends SetupExecutor {
 
       exportOptionsPlist = profilesManager.exportOptionsPlist(
         appId: appId,
+        signingType: signingType,
         certificateSha1: data.sha1,
         provisionProfile: data.profile,
         developerTeamId: developerTeamId,
         provisionProfileType: provisionProfileType,
-        signingType: configuration.iosBuildSigningType,
       );
 
       buildConfiguration = _createBuildConfiguration(

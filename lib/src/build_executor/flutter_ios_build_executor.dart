@@ -135,6 +135,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     final File codeSigningConfig = createCodeSigningXCConfig(
       parentDirectory: iosFlutterDir,
       signingType: configuration.iosSigningType,
+      provisionProfileType: configuration.iosProvisionProfileType,
       logger: logger,
       developerTeamId: developerTeamId,
       provisionProfile: provisionProfile,

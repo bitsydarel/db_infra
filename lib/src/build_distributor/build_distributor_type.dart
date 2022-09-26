@@ -1,7 +1,9 @@
 ///
 enum BuildDistributorType {
   ///
-  directory
+  directory,
+  ///
+  appStoreConnect,
 }
 
 ///
