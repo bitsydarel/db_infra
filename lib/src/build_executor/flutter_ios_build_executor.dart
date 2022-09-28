@@ -166,6 +166,8 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         configuration.iosProvisionProfileName == null) {
       Directory.current = path.join(projectDir, 'ios');
 
+      await certificatesManager.enableAutomaticSigning();
+
       final ShellOutput output = runner.execute(
         'xcodebuild',
         <String>[

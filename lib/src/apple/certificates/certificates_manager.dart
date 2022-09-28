@@ -439,6 +439,11 @@ class CertificatesManager {
   }
 
   ///
+  Future<void> enableAutomaticSigning() async {
+    _keychainsManager.makeKeychainDefault(_keychainsManager.appKeychain);
+  }
+
+  ///
   Future<void> cleanupLocally() async {
     _keychainsManager.deleteKeychain(_keychainsManager.appKeychain);
   }

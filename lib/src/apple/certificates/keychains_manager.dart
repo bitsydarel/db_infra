@@ -61,8 +61,6 @@ class KeychainsManager {
     defaultKeychain = getDefaultKeychain();
 
     logger.logInfo('Default keychain for the user is $defaultKeychain');
-
-    unlockKeychain(defaultKeychain);
   }
 
   ///
@@ -279,6 +277,22 @@ class KeychainsManager {
     }
 
     return keychains;
+  }
+
+  ///
+  void makeKeychainDefault(String keychain) {
+    logger.logInfo('Making keychain $keychain as default.');
+
+    final ShellOutput output = runner.execute(
+      'security',
+      <String>['default-keychain', '-s', keychain],
+    );
+
+    if (output.stderr.isNotEmpty) {
+      throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
+    }
+
+    logger.logInfo('$keychain is now default.');
   }
 
   ///
