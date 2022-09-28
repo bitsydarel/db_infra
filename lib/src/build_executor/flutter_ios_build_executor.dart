@@ -5,6 +5,7 @@ import 'package:db_infra/src/apple/certificates/certificate.dart';
 import 'package:db_infra/src/apple/certificates/certificates_manager.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.dart';
+import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/apple/xcode_project/xcode_project.dart';
 import 'package:db_infra/src/build_executor/build_executor.dart';
 import 'package:db_infra/src/build_output_type.dart';
@@ -168,40 +169,9 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
       await certificatesManager.enableAutomaticSigning();
 
-      final ShellOutput output = runner.execute(
-        'xcodebuild',
-        <String>[
-          '-workspace',
-          'Runner.xcworkspace',
-          '-scheme',
-          'Runner',
-          '-sdk',
-          'iphoneos',
-          '-configuration',
-          'Release',
-          '-allowProvisioningUpdates',
-          '-authenticationKeyPath',
-          configuration.iosAppStoreConnectKey.path,
-          '-authenticationKeyID',
-          configuration.iosAppStoreConnectKeyId,
-          '-authenticationKeyIssuerID',
-          configuration.iosAppStoreConnectKeyIssuer,
-          'archive',
-          '-archivePath',
-          'build/Runner.xcarchive',
-        ],
-      );
+      _buildArchive();
 
-      if (!output.stdout.contains('** ARCHIVE SUCCEEDED **')) {
-        logger
-          ..logInfo(output.stdout)
-          ..logError(output.stderr);
-        throw UnrecoverableException(output.stderr, ExitCode.tempFail.code);
-      }
-
-      logger.logInfo(
-        'Project signing config updated to work with Automatic sign in',
-      );
+      _buildIpa();
 
       Directory.current = projectDir;
     }
@@ -246,5 +216,82 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     certificatesManager.cleanupLocally();
 
     return outputFile;
+  }
+
+  void _buildIpa() {
+    final ShellOutput exportArchive = runner.execute(
+      'xcodebuild',
+      <String>[
+        '-exportArchive',
+        '-archivePath',
+        'build/Runner.xcarchive',
+        '-allowProvisioningUpdates',
+        '-authenticationKeyPath',
+        configuration.iosAppStoreConnectKey.path,
+        '-authenticationKeyID',
+        configuration.iosAppStoreConnectKeyId,
+        '-authenticationKeyIssuerID',
+        configuration.iosAppStoreConnectKeyIssuer,
+        '-exportOptionsPlist',
+        configuration.iosExportOptionsPlist.path,
+        '-exportPath',
+        'build/Runner.ipa'
+      ],
+    );
+
+    if (!exportArchive.stdout.contains('EXPORT SUCCEEDED')) {
+      logger
+        ..logInfo(exportArchive.stdout)
+        ..logError(exportArchive.stderr);
+      throw UnrecoverableException(
+        exportArchive.stderr,
+        ExitCode.tempFail.code,
+      );
+    }
+
+    logger.logInfo(
+      'Created Signing config for '
+      '${configuration.iosProvisionProfileType.exportMethod} (by creating ipa)',
+    );
+  }
+
+  void _buildArchive() {
+    final ShellOutput archiveOutput = runner.execute(
+      'xcodebuild',
+      <String>[
+        '-workspace',
+        'Runner.xcworkspace',
+        '-scheme',
+        'Runner',
+        '-sdk',
+        'iphoneos',
+        '-configuration',
+        'Release',
+        '-allowProvisioningUpdates',
+        '-authenticationKeyPath',
+        configuration.iosAppStoreConnectKey.path,
+        '-authenticationKeyID',
+        configuration.iosAppStoreConnectKeyId,
+        '-authenticationKeyIssuerID',
+        configuration.iosAppStoreConnectKeyIssuer,
+        'archive',
+        '-archivePath',
+        'build/Runner.xcarchive',
+      ],
+    );
+
+    if (!archiveOutput.stdout.contains('ARCHIVE SUCCEEDED')) {
+      logger
+        ..logInfo(archiveOutput.stdout)
+        ..logError(archiveOutput.stderr);
+      throw UnrecoverableException(
+        archiveOutput.stderr,
+        ExitCode.tempFail.code,
+      );
+    }
+
+    logger.logInfo(
+      'Created Signing config for Apple Development (by creating archive)',
+    );
   }
 }
