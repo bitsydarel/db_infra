@@ -184,7 +184,10 @@ class FlutterIosBuildExecutor extends BuildExecutor {
           configuration.iosAppStoreConnectKeyId,
           '-authenticationKeyIssuerID',
           configuration.iosAppStoreConnectKeyIssuer,
-          'build',
+          '-quiet',
+          'archive',
+          '-archivePath',
+          'build/Runner.xcarchive',
         ],
       );
 
