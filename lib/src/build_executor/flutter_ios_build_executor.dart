@@ -143,6 +143,8 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       envs: environmentVariables,
     );
 
+    logger.logInfo('Infra.xconfig\n${codeSigningConfig.readAsStringSync()}');
+
     final File releaseConfig = File(
       path.join(iosFlutterDir.path, 'Release.xcconfig'),
     );
@@ -156,6 +158,45 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     final String projectDir = path.canonicalize(projectDirectory.path);
 
     Directory.current = projectDir;
+
+    // Check if automatic signing is enabled, if yes than build project
+    // with xcodebuild to allow it to created the required signing config.
+    if (configuration.iosDeveloperTeamId != null &&
+        configuration.iosCertificateSigningRequestPrivateKey == null &&
+        configuration.iosProvisionProfileName == null) {
+      Directory.current = path.join(projectDir, 'ios');
+
+      final ShellOutput output = runner.execute(
+        'xcodebuild',
+        <String>[
+          '-workspace',
+          'Runner.xcworkspace',
+          '-scheme',
+          'Runner',
+          '-sdk',
+          'iphoneos',
+          '-configuration',
+          'Release',
+          '-allowProvisioningUpdates',
+          '-authenticationKeyPath',
+          configuration.iosAppStoreConnectKey.path,
+          '-authenticationKeyID',
+          configuration.iosAppStoreConnectKeyId,
+          '-authenticationKeyIssuerID',
+          configuration.iosAppStoreConnectKeyIssuer,
+          'build',
+        ],
+      );
+
+      if (output.stderr.isNotEmpty) {
+        logger
+          ..logInfo(output.stdout)
+          ..logError(output.stderr);
+        throw UnrecoverableException(output.stderr, ExitCode.tempFail.code);
+      }
+
+      Directory.current = projectDir;
+    }
 
     final ShellOutput output = runner.execute(
       'flutter',

@@ -46,8 +46,8 @@ File createCodeSigningXCConfig({
     newConfig.writeln('$codeSignIdentityKey=${certificate.name}');
   } else {
     final String codeSignIdentity = provisionProfileType.isDevelopment()
-        ? 'Apple Development'
-        : 'Apple Distribution';
+        ? 'iPhone Developer'
+        : 'iPhone Distribution';
 
     newConfig.writeln('$codeSignIdentityKey=$codeSignIdentity');
   }
