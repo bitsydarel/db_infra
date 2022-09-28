@@ -53,7 +53,8 @@ class FileToAppStoreConnectBuildDistributor extends BuildDistributor {
         privateKeysDir.path,
         'AuthKey_${configuration.iosAppStoreConnectKeyId}.p8',
       ),
-    )..writeAsBytesSync(configuration.iosAppStoreConnectKey.readAsBytesSync());
+    )..createSync(recursive: true)
+      ..writeAsBytesSync(configuration.iosAppStoreConnectKey.readAsBytesSync());
 
     final ShellOutput commandOutput = runner.execute(
       'xcrun',
