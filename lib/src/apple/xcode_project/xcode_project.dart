@@ -17,6 +17,9 @@ const String codeSignStyleKey = 'CODE_SIGN_STYLE';
 const String provisionProfileKey = 'PROVISIONING_PROFILE';
 
 ///
+const String provisionStyleKey = 'ProvisioningStyle';
+
+///
 const String provisioningProfileSpecifierKey = 'PROVISIONING_PROFILE_SPECIFIER';
 
 ///
@@ -41,16 +44,13 @@ File createCodeSigningXCConfig({
 
   if (certificate != null) {
     newConfig.writeln('$codeSignIdentityKey=${certificate.name}');
+  } else {
+    final String codeSignIdentity = provisionProfileType.isDevelopment()
+        ? 'Apple Development'
+        : 'Apple Distribution';
+
+    newConfig.writeln('$codeSignIdentityKey=$codeSignIdentity');
   }
-  // else {
-  //   final String codeSignIdentity = provisionProfileType.isDevelopment()
-  //       ? 'Apple Development'
-  //       : 'Apple Distribution';
-  //
-  //   newConfig.writeln(
-  //     '$codeSignIdentityKey=$codeSignIdentity',
-  //   );
-  // }
 
   switch (signingType) {
     case IosBuildSigningType.automatic:
@@ -65,12 +65,14 @@ File createCodeSigningXCConfig({
     newConfig
       ..writeln('$provisionProfileKey=${provisionProfile.uuid}')
       ..writeln('$provisioningProfileSpecifierKey=${provisionProfile.name}');
-  } else if ( developerTeamId != null) {
-    newConfig.writeln('$provisioningProfileSpecifierKey=Automatic');
   }
 
   if (developerTeamId != null) {
     newConfig.writeln('$iosDeveloperTeamIdKey=$developerTeamId');
+
+    if (provisionProfile == null) {
+      newConfig.writeln('$provisionStyleKey=Automatic');
+    }
   }
 
   if (envs != null) {
