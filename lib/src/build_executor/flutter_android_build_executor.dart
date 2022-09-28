@@ -75,7 +75,8 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
 
     infraAndroidConfig.deleteSync();
 
-    if (output.stderr.isNotEmpty) {
+    if (output.stdout.contains('BUILD FAILED') ||
+        output.stderr.contains('BUILD FAILED')) {
       logger
         ..logInfo(output.stdout)
         ..logError(output.stderr);
