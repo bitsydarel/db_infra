@@ -184,19 +184,22 @@ class FlutterIosBuildExecutor extends BuildExecutor {
           configuration.iosAppStoreConnectKeyId,
           '-authenticationKeyIssuerID',
           configuration.iosAppStoreConnectKeyIssuer,
-          '-quiet',
           'archive',
           '-archivePath',
           'build/Runner.xcarchive',
         ],
       );
 
-      if (output.stderr.isNotEmpty) {
+      if (!output.stdout.contains('** ARCHIVE SUCCEEDED **')) {
         logger
           ..logInfo(output.stdout)
           ..logError(output.stderr);
         throw UnrecoverableException(output.stderr, ExitCode.tempFail.code);
       }
+
+      logger.logInfo(
+        'Project signing config updated to work with Automatic sign in',
+      );
 
       Directory.current = projectDir;
     }
