@@ -104,8 +104,6 @@ class KeychainsManager {
     } else if (output.stderr.isNotEmpty) {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
     }
-
-    updateAppKeychainPartitionList();
   }
 
   ///

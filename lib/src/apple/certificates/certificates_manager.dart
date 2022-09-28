@@ -83,7 +83,9 @@ class CertificatesManager {
 
   ///
   void importCertificateFileLocally(File certificateFile) {
-    _keychainsManager.importIntoAppKeychain(certificateFile);
+    _keychainsManager
+      ..importIntoAppKeychain(certificateFile)
+      ..updateAppKeychainPartitionList();
   }
 
   ///
