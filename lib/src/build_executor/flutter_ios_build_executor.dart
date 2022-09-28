@@ -174,31 +174,33 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       _buildIpa();
 
       Directory.current = projectDir;
-    }
+    } else {
+      final ShellOutput output = runner.execute(
+        'flutter',
+        <String>[
+          'build',
+          configuration.iosBuildOutputType.name,
+          '--release',
+          '--export-options-plist',
+          configuration.iosExportOptionsPlist.path,
+          if (dartDefines != null) ...dartDefines,
+        ],
+        <String, String>{'CI': 'true'},
+      );
 
-    final ShellOutput output = runner.execute(
-      'flutter',
-      <String>[
-        'build',
-        configuration.iosBuildOutputType.name,
-        '--release',
-        '--export-options-plist',
-        configuration.iosExportOptionsPlist.path,
-        if (dartDefines != null) ...dartDefines,
-      ],
-      <String, String>{'CI': 'true'},
-    );
+      if (output.stderr.isNotEmpty) {
+        cleanupProjectSigningConfiguration(codeSigningConfig, releaseConfig);
+
+        logger
+          ..logInfo(output.stdout)
+          ..logError(output.stderr);
+        throw UnrecoverableException(output.stderr, ExitCode.tempFail.code);
+      }
+    }
 
     Directory.current = oldPath;
 
     cleanupProjectSigningConfiguration(codeSigningConfig, releaseConfig);
-
-    if (output.stderr.isNotEmpty) {
-      logger
-        ..logInfo(output.stdout)
-        ..logError(output.stderr);
-      throw UnrecoverableException(output.stderr, ExitCode.tempFail.code);
-    }
 
     final File? outputFile =
         configuration.iosBuildOutputType.outputFile(projectDirectory);
@@ -235,7 +237,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         '-exportOptionsPlist',
         configuration.iosExportOptionsPlist.path,
         '-exportPath',
-        'build/Runner.ipa'
+        path.join(projectDirectory.path, 'build/ios/ipa'),
       ],
     );
 
