@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:db_infra/src/apple/certificates/api/appstoreconnectapi_certificates.dart';
 import 'package:db_infra/src/apple/certificates/certificate.dart';
@@ -9,22 +10,24 @@ import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/file_utils.dart';
+import 'package:http/http.dart' as http;
 import 'package:io/io.dart';
 import 'package:meta/meta.dart';
+import 'package:path/path.dart' as path;
 
 const String _privateKeyKeyword = 'BEGIN PRIVATE KEY';
 const String _csrKeyword = 'BEGIN CERTIFICATE REQUEST';
 const String _rsaPrivateKeyKeyword = 'BEGIN RSA PRIVATE KEY';
 const String _publicKeyKeyword = 'BEGIN PUBLIC KEY';
 
-// const String _appleWWDRCAName =
-//     'Apple Worldwide Developer Relations Certification Authority';
+const String _appleWWDRCAName =
+    'Apple Worldwide Developer Relations Certification Authority';
 
-// const String _appleWWDRCA =
-//     'https://developer.apple.com/certificationauthority/AppleWWDRCA.cer';
+const String _appleWWDRCA =
+    'https://developer.apple.com/certificationauthority/AppleWWDRCA.cer';
 
-// const String _appleWWDRCAG3 =
-//     'https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer';
+const String _appleWWDRCAG3 =
+    'https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer';
 
 ///
 class CertificatesManager {
@@ -440,7 +443,46 @@ class CertificatesManager {
 
   ///
   Future<void> enableAutomaticSigning() async {
+    if (!hasAppleWorldwideDevCertificate()) {
+      await installAppleWWDeveloperRelationsCertificates();
+    }
     _keychainsManager.makeKeychainDefault(_keychainsManager.appKeychain);
+  }
+
+  ///
+  @visibleForTesting
+  Future<void> installAppleWWDeveloperRelationsCertificates() async {
+    final Directory tempDir = Directory.systemTemp;
+
+    final Future<File> Function(String url) download = (String url) async {
+      try {
+        final Uri uri = Uri.parse(url);
+
+        final Uint8List fileData = await http.readBytes(uri);
+
+        return File('${tempDir.path}/${path.basename(url)}')
+          ..writeAsBytesSync(fileData, flush: true);
+      } on http.ClientException catch (nme) {
+        throw UnrecoverableException(nme.message, ExitCode.osFile.code);
+      }
+    };
+
+    final File appleWWDRCAFile = await download(_appleWWDRCA);
+
+    _keychainsManager.importIntoAppKeychain(appleWWDRCAFile);
+
+    final File appleWWDRCAG3 = await download(_appleWWDRCAG3);
+
+    _keychainsManager.importIntoAppKeychain(appleWWDRCAG3);
+  }
+
+  ///
+  @visibleForTesting
+  bool hasAppleWorldwideDevCertificate() {
+    final List<String> certificates =
+        _keychainsManager.getCertificateInAppKeychain(_appleWWDRCAName);
+
+    return certificates.length == 2;
   }
 
   ///
