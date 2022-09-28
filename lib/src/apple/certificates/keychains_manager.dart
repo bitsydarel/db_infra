@@ -59,6 +59,10 @@ class KeychainsManager {
     resetKeychainSettings(appKeychain);
 
     defaultKeychain = getDefaultKeychain();
+
+    logger.logInfo('Default keychain for the user is $defaultKeychain');
+
+    unlockKeychain(defaultKeychain);
   }
 
   ///
@@ -127,6 +131,8 @@ class KeychainsManager {
 
   ///
   void deleteKeychain(String name) {
+    logger.logInfo('Deleting keychain $name...');
+
     final ShellOutput output = runner.execute(
       'security',
       <String>['delete-keychain', name],
@@ -135,11 +141,15 @@ class KeychainsManager {
     if (output.stderr.isNotEmpty) {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
     }
+
+    logger.logInfo('Deleted keychain $name.');
   }
 
   ///
   @visibleForTesting
   void unlockKeychain(final String name) {
+    logger.logInfo('Unlocking keychain $name...');
+
     final ShellOutput output = runner.execute(
       'security',
       <String>['unlock-keychain', '-p', name, name],
@@ -148,11 +158,15 @@ class KeychainsManager {
     if (output.stderr.isNotEmpty) {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
     }
+
+    logger.logInfo('Unlocked keychain $name');
   }
 
   ///
   @visibleForTesting
   void resetKeychainSettings(final String name) {
+    logger.logInfo('Resetting keychain $name...');
+
     final ShellOutput output = runner.execute(
       'security',
       <String>['set-keychain-settings', name],
@@ -161,6 +175,8 @@ class KeychainsManager {
     if (output.stderr.isNotEmpty) {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
     }
+
+    logger.logInfo('Reset keychain $name.');
   }
 
   ///
@@ -211,6 +227,8 @@ class KeychainsManager {
   ///
   @visibleForTesting
   void updateKeychainSearchPaths(List<String> keychains) {
+    logger.logInfo('Updating keychain search paths...');
+
     final ShellOutput output = runner.execute(
       'security',
       <String>['list-keychains', '-d', 'user', '-s', ...keychains],
@@ -219,6 +237,8 @@ class KeychainsManager {
     if (output.stderr.isNotEmpty) {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
     }
+
+    logger.logInfo('Updated keychain search paths.');
   }
 
   ///

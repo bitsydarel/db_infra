@@ -36,6 +36,11 @@ class FileToAppStoreConnectBuildDistributor extends BuildDistributor {
       );
     }
 
+    final String oldPath = path.canonicalize(Directory.current.path);
+    final String projectDir = path.canonicalize(projectDirectory.path);
+
+    Directory.current = projectDir;
+
     final Directory privateKeysDir = Directory(
       path.join(projectDirectory.path, 'private_keys'),
     );
@@ -72,6 +77,8 @@ class FileToAppStoreConnectBuildDistributor extends BuildDistributor {
     } else {
       privateKeysDir.deleteSync(recursive: true);
     }
+
+    Directory.current = oldPath;
 
     if (commandOutput.stderr.isNotEmpty) {
       logger
