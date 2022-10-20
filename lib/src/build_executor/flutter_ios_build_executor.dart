@@ -169,7 +169,24 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
       await certificatesManager.enableAutomaticSigning();
 
-      _buildArchive();
+      final ShellOutput output = runner.execute(
+        'flutter',
+        <String>[
+          'build',
+          'ios',
+          '--release',
+          '--no-codesign',
+          if (dartDefines != null) ...dartDefines,
+        ],
+        <String, String>{'CI': 'true'},
+      );
+
+      if (output.stderr.isNotEmpty) {
+        logger
+          ..logInfo(output.stdout)
+          ..logError(output.stderr);
+        throw UnrecoverableException(output.stderr, ExitCode.tempFail.code);
+      }
 
       _buildIpa();
 

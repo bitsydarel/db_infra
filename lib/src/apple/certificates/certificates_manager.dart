@@ -23,11 +23,25 @@ const String _publicKeyKeyword = 'BEGIN PUBLIC KEY';
 const String _appleWWDRCAName =
     'Apple Worldwide Developer Relations Certification Authority';
 
-const String _appleWWDRCA =
-    'https://developer.apple.com/certificationauthority/AppleWWDRCA.cer';
-
-const String _appleWWDRCAG3 =
-    'https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer';
+const List<String> _appleCertificates = <String>[
+  'https://developer.apple.com/certificationauthority/AppleWWDRCA.cer',
+  'https://www.apple.com/certificateauthority/AppleWWDRCAG3.cer',
+  'https://www.apple.com/certificateauthority/AppleISTCA2G1.cer',
+  'https://www.apple.com/certificateauthority/AppleISTCA8G1.cer',
+  'https://www.apple.com/certificateauthority/AppleAAICA.cer',
+  'https://www.apple.com/certificateauthority/AppleAAI2CA.cer',
+  'https://www.apple.com/certificateauthority/AppleAAICAG3.cer',
+  'https://www.apple.com/certificateauthority/AppleApplicationIntegrationCA5G1.cer',
+  'https://www.apple.com/certificateauthority/DevAuthCA.cer',
+  'https://www.apple.com/certificateauthority/DeveloperIDCA.cer',
+  'https://www.apple.com/certificateauthority/DeveloperIDG2CA.cer',
+  'https://www.apple.com/certificateauthority/AppleSoftwareUpdateCertificationAuthority.cer',
+  'https://www.apple.com/certificateauthority/AppleTimestampCA.cer',
+  'https://www.apple.com/certificateauthority/AppleWWDRCAG2.cer',
+  'https://www.apple.com/certificateauthority/AppleWWDRCAG4.cer',
+  'https://www.apple.com/certificateauthority/AppleWWDRCAG5.cer',
+  'https://www.apple.com/certificateauthority/AppleWWDRCAG6.cer',
+];
 
 ///
 class CertificatesManager {
@@ -469,13 +483,10 @@ class CertificatesManager {
       }
     };
 
-    final File appleWWDRCAFile = await download(_appleWWDRCA);
-
-    _keychainsManager.importIntoAppKeychain(appleWWDRCAFile);
-
-    final File appleWWDRCAG3 = await download(_appleWWDRCAG3);
-
-    _keychainsManager.importIntoAppKeychain(appleWWDRCAG3);
+    for (final String appleCertificateUrl in _appleCertificates) {
+      final File appleCertificateFile = await download(appleCertificateUrl);
+      _keychainsManager.importIntoAppKeychain(appleCertificateFile);
+    }
   }
 
   ///
