@@ -176,6 +176,8 @@ extension ArgResultsExtension on ArgResults {
         parseOptionalString(infraGcloudProjectBucketNameArg);
     final String? gcloudProjectServiceAccountFile =
         parseOptionalString(infraGcloudProjectServiceAccountFileArg);
+    final String? gcloudProjectBucketFolder =
+        parseOptionalString(infraGcloudProjectBucketFolderArg);
 
     return infraStorageType.from(
       infraLogger: logger,
@@ -187,6 +189,7 @@ extension ArgResultsExtension on ArgResults {
       ftpServerFolderName: ftpFolderName ?? 'credentials',
       gcloudProjectId: gcloudProjectId,
       gcloudBucketName: gcloudProjectBucketName,
+      gcloudBucketFolder: gcloudProjectBucketFolder,
       gcloudServiceAccountFile:
           gcloudProjectServiceAccountFile?.trim().isNotEmpty == true
               ? File(gcloudProjectServiceAccountFile!)

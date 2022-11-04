@@ -181,6 +181,11 @@ class InfraSetupCommand extends BaseCommand {
         help: 'Specify the infrastructure gcloud project bucket name.',
       )
       ..addOption(
+        infraGcloudProjectBucketFolderArg,
+        help: 'Specify the infrastructure gcloud project bucket folder.',
+        defaultsTo: 'development',
+      )
+      ..addOption(
         infraGcloudProjectServiceAccountFileArg,
         help: 'Specify the infrastructure gcloud project service account.',
       );

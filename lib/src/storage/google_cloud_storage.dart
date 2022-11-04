@@ -12,12 +12,14 @@ import 'package:path/path.dart' as path;
 const String _gcloudProjectIdKey = 'gcloudProjectId';
 const String _bucketNameKey = 'bucketName';
 const String _serviceAccountKey = 'serviceAccount';
+const String _bucketFolderKey = 'bucketFolder';
 
 ///
 class GoogleCloudStorage extends Storage {
   ///
   const GoogleCloudStorage({
     required this.bucketName,
+    required this.bucketFolder,
     required this.serviceAccount,
     required this.gcloudProjectId,
     required this.logger,
@@ -32,6 +34,7 @@ class GoogleCloudStorage extends Storage {
   ) {
     final Object? gcloudProjectId = json[_gcloudProjectIdKey];
     final Object? bucketName = json[_bucketNameKey];
+    final Object? bucketFolder = json[_bucketFolderKey];
     final Object? serviceAccount = json[_serviceAccountKey];
 
     return GoogleCloudStorage(
@@ -40,6 +43,9 @@ class GoogleCloudStorage extends Storage {
           : throw ArgumentError(gcloudProjectId),
       bucketName:
           bucketName is String ? bucketName : throw ArgumentError(bucketName),
+      bucketFolder: bucketFolder is String
+          ? bucketFolder
+          : throw ArgumentError(bucketFolder),
       serviceAccount: serviceAccount is String
           ? serviceAccount
           : throw ArgumentError(serviceAccount),
@@ -54,6 +60,7 @@ class GoogleCloudStorage extends Storage {
       _gcloudProjectIdKey: gcloudProjectId,
       _bucketNameKey: bucketName,
       _serviceAccountKey: serviceAccount,
+      _bucketFolderKey: bucketFolder,
     };
   }
 
@@ -65,6 +72,9 @@ class GoogleCloudStorage extends Storage {
 
   ///
   final String bucketName;
+
+  ///
+  final String bucketFolder;
 
   ///
   final Logger logger;
@@ -86,7 +96,9 @@ class GoogleCloudStorage extends Storage {
       path.join(localDirectory.path, zipFileName),
     )..createSync();
 
-    await bucket.read(zipFileName).pipe(localZipFile.openWrite());
+    await bucket
+        .read('$bucketFolder/$zipFileName')
+        .pipe(localZipFile.openWrite());
 
     if (localZipFile.lengthSync() <= 0) {
       throw UnrecoverableException(
@@ -144,7 +156,7 @@ class GoogleCloudStorage extends Storage {
     try {
       await zipFile.openRead().pipe(
             bucket.write(
-              path.basename(zipFile.path),
+              '$bucketFolder/${path.basename(zipFile.path)}',
               length: zipFile.lengthSync(),
             ),
           );
@@ -176,6 +188,7 @@ class GoogleCloudStorage extends Storage {
         storage.Storage(client, gcloudProjectId);
 
     final storage.Bucket bucket = gcloudStorage.bucket(bucketName);
+
     return bucket;
   }
 }

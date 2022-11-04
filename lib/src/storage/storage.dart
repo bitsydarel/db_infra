@@ -82,6 +82,7 @@ extension StorageByTypeFactoryExtension on StorageType {
     final String? ftpServerFolderName,
     final String? gcloudProjectId,
     final String? gcloudBucketName,
+    final String? gcloudBucketFolder,
     final File? gcloudServiceAccountFile,
   }) {
     switch (this) {
@@ -125,9 +126,11 @@ extension StorageByTypeFactoryExtension on StorageType {
         if (gcloudProjectId != null &&
             gcloudBucketName != null &&
             gcloudServiceAccountFile != null &&
+            gcloudBucketFolder != null &&
             gcloudServiceAccountFile.existsSync()) {
           return GoogleCloudStorage(
             bucketName: gcloudBucketName,
+            bucketFolder: gcloudBucketFolder,
             serviceAccount: gcloudServiceAccountFile.readAsStringSync(),
             gcloudProjectId: gcloudProjectId,
             logger: infraLogger,

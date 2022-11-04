@@ -111,6 +111,9 @@ const String infraGcloudProjectIdArg = 'gcloud-project-id';
 /// Infrastructure gcloud bucket name.
 const String infraGcloudProjectBucketNameArg = 'gcloud-bucket-name';
 
+/// Infrastructure gcloud bucket folder.
+const String infraGcloudProjectBucketFolderArg = 'gcloud-bucket-folder';
+
 /// Infrastructure gcloud service account name.
 const String infraGcloudProjectServiceAccountFileArg =
     'gcloud-service-account-file';
