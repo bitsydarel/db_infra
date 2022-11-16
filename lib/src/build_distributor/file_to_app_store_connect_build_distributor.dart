@@ -53,7 +53,8 @@ class FileToAppStoreConnectBuildDistributor extends BuildDistributor {
         privateKeysDir.path,
         'AuthKey_${configuration.iosAppStoreConnectKeyId}.p8',
       ),
-    )..createSync(recursive: true)
+    )
+      ..createSync(recursive: true)
       ..writeAsBytesSync(configuration.iosAppStoreConnectKey.readAsBytesSync());
 
     final ShellOutput commandOutput = runner.execute(
@@ -81,7 +82,8 @@ class FileToAppStoreConnectBuildDistributor extends BuildDistributor {
 
     Directory.current = oldPath;
 
-    if (commandOutput.stderr.isNotEmpty) {
+    if (commandOutput.stderr.isNotEmpty &&
+        !commandOutput.stdout.contains('No errors uploading')) {
       logger
         ..logInfo(commandOutput.stdout)
         ..logError(commandOutput.stderr);
