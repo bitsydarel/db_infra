@@ -1,7 +1,6 @@
 import 'dart:io';
 
-import 'package:db_infra/db_infra.dart';
-import 'package:db_infra/src/logger.dart';
+import 'package:db_infra/src/logger.dart' as db_log;
 import 'package:db_infra/src/storage/storage.dart';
 import 'package:db_infra/src/utils/utils.dart';
 import 'package:ftpconnect/ftpconnect.dart';
@@ -35,7 +34,7 @@ class FtpStorage extends Storage {
   final FTPConnect _ftpConnection;
 
   ///
-  final Logger logger;
+  final db_log.Logger logger;
 
   ///
   final Directory infraDirectory;
@@ -63,7 +62,7 @@ class FtpStorage extends Storage {
   ///
   factory FtpStorage.fromJson(
     JsonMap json,
-    Logger logger,
+    db_log.Logger logger,
     Directory infraDirectory,
   ) {
     final Object? username = json[_usernameKey];
@@ -123,7 +122,7 @@ class FtpStorage extends Storage {
 
     await _ftpConnection.disconnect();
 
-    await FTPConnect.unZipFile(localZipFile, localDirectory.path);
+    await localZipFile.unzip(localDirectory.path);
 
     localZipFile.deleteSync();
 
@@ -146,10 +145,7 @@ class FtpStorage extends Storage {
       path.join(infraDirectory.path, _getZipFileName()),
     );
 
-    await FTPConnect.zipFiles(
-      files.map((File file) => file.path).toList(),
-      zipFile.path,
-    );
+    await zipFile.zip(files);
 
     logger.logInfo(
       'Creating directory $serverFolderName on ftp server if not exist.',
