@@ -55,7 +55,7 @@ class FtpStorage extends Storage {
               user: username,
               pass: password,
               port: serverPort,
-              debug: logger.enableLogging,
+              showLog: logger.enableLogging,
               timeout: const Duration(minutes: 15).inSeconds,
             );
 
