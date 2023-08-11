@@ -6,7 +6,6 @@ import 'package:args/command_runner.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/encryptor/aes_encryptor.dart';
 import 'package:db_infra/src/encryptor/encryptor.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/storage/storage.dart';
 import 'package:db_infra/src/utils/utils.dart';
 import 'package:io/io.dart';
@@ -20,7 +19,6 @@ abstract class BaseCommand extends Command<void> {
   Future<InfraBuildConfiguration> loadConfiguration({
     required File configuration,
     required Directory infraDirectory,
-    required Logger logger,
     String? aesPassword,
   }) async {
     final String fileContent = configuration.readAsStringSync();
@@ -30,7 +28,6 @@ abstract class BaseCommand extends Command<void> {
     if (rawJson is JsonMap) {
       return InfraBuildConfiguration.fromJson(
         json: rawJson,
-        logger: logger,
         infraDir: infraDirectory,
         aesPassword: aesPassword,
       );
@@ -158,7 +155,6 @@ extension ArgResultsExtension on ArgResults {
   Storage getInfraStorage(
     final StorageType infraStorageType,
     final Encryptor infraEncryptor,
-    final Logger logger,
     final Directory infraDirectory,
   ) {
     final String? infraDiskStorageLocation =
@@ -180,7 +176,6 @@ extension ArgResultsExtension on ArgResults {
         parseOptionalString(infraGcloudProjectBucketFolderArg);
 
     return infraStorageType.from(
-      infraLogger: logger,
       infraDirectory: infraDirectory,
       ftpUsername: ftpUsername,
       ftpPassword: ftpPassword,

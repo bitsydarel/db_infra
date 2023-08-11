@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:db_infra/src/configuration/configuration.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/setup_executor/setup_executor.dart';
 import 'package:db_infra/src/shell_runner.dart';
 
@@ -11,12 +10,8 @@ class AndroidSetupExecutor extends SetupExecutor {
   const AndroidSetupExecutor({
     required InfraSetupConfiguration configuration,
     required Directory infraDirectory,
-    required this.logger,
     this.runner = const ShellRunner(),
   }) : super(configuration, infraDirectory);
-
-  ///
-  final Logger logger;
 
   ///
   final ShellRunner runner;

@@ -5,7 +5,6 @@ import 'package:db_infra/src/build_output_type.dart';
 import 'package:db_infra/src/build_signing_type.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/encryptor/encryptor.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/storage/storage.dart';
 import 'package:db_infra/src/utils/utils.dart';
 import 'package:io/io.dart';
@@ -89,7 +88,6 @@ class InfraBuildConfiguration extends Configuration {
   ///
   static Future<InfraBuildConfiguration> fromJson({
     required final JsonMap json,
-    required final Logger logger,
     required final Directory infraDir,
     String? aesPassword,
   }) async {
@@ -141,7 +139,6 @@ class InfraBuildConfiguration extends Configuration {
     final Encryptor encryptor = json.getEncryptor(
       encryptorType: encryptorType,
       infraDirectory: infraDir,
-      infraLogger: logger,
       aesPassword: aesPassword,
     );
 
@@ -241,7 +238,7 @@ class InfraBuildConfiguration extends Configuration {
               ? IosBuildSigningType.automatic
               : IosBuildSigningType.manuel),
       storageType: infraStorageType,
-      storage: infraStorageType.fromJson(storageAsJson, logger, infraDir),
+      storage: infraStorageType.fromJson(storageAsJson, infraDir),
       encryptorType: encryptorType,
       encryptor: encryptor,
     );
@@ -315,7 +312,6 @@ extension InfraConfigurationJsonExtension on JsonMap {
   Encryptor getEncryptor({
     required final EncryptorType encryptorType,
     required final Directory infraDirectory,
-    required final Logger infraLogger,
     String? aesPassword,
   }) {
     final Object? encryptorAsJson = this['encryptor'];

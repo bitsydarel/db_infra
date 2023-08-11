@@ -10,7 +10,6 @@ import 'package:db_infra/src/apple/device/device_manager.dart';
 import 'package:db_infra/src/apple/provision_profile/api/appstoreconnectapi_profiles.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/utils/network_manager.dart';
 
 ///
@@ -19,12 +18,10 @@ extension RunConfigurationExtensions on Configuration {
   ProvisionProfileManager getProfilesManager(
     CertificatesManager certificatesManager,
     Directory infraDirectory,
-    Logger logger,
   ) {
     return ProvisionProfileManager(
       certificatesManager,
       infraDirectory,
-      logger,
       AppStoreConnectApiProfiles(
         configuration: this,
         httpClient: networkManager,
@@ -33,13 +30,12 @@ extension RunConfigurationExtensions on Configuration {
   }
 
   ///
-  CertificatesManager getCertificatesManager(Logger logger) {
+  CertificatesManager getCertificatesManager() {
     final KeychainsManager keychainsManager =
-        KeychainsManager(appKeychain: iosAppId, logger: logger);
+        KeychainsManager(appKeychain: iosAppId);
 
     return CertificatesManager(
       keychainsManager,
-      logger,
       AppStoreConnectApiCertificates(
         configuration: this,
         httpClient: networkManager,

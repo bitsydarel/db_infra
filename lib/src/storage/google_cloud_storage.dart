@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:archive/archive_io.dart' as archiver;
-import 'package:db_infra/src/logger.dart';
+import 'package:bdlogging/bdlogging.dart';
 import 'package:db_infra/src/storage/storage.dart';
 import 'package:db_infra/src/utils/utils.dart';
 import 'package:gcloud/storage.dart' as storage;
@@ -22,14 +22,12 @@ class GoogleCloudStorage extends Storage {
     required this.bucketFolder,
     required this.serviceAccount,
     required this.gcloudProjectId,
-    required this.logger,
     required this.infraDirectory,
   });
 
   ///
   factory GoogleCloudStorage.fromJson(
     JsonMap json,
-    Logger logger,
     Directory infraDirectory,
   ) {
     final Object? gcloudProjectId = json[_gcloudProjectIdKey];
@@ -49,7 +47,6 @@ class GoogleCloudStorage extends Storage {
       serviceAccount: serviceAccount is String
           ? serviceAccount
           : throw ArgumentError(serviceAccount),
-      logger: logger,
       infraDirectory: infraDirectory,
     );
   }
@@ -75,9 +72,6 @@ class GoogleCloudStorage extends Storage {
 
   ///
   final String bucketFolder;
-
-  ///
-  final Logger logger;
 
   ///
   final Directory infraDirectory;
@@ -161,9 +155,8 @@ class GoogleCloudStorage extends Storage {
             ),
           );
     } on Object catch (e, s) {
-      logger
-        ..logError(e.toString())
-        ..logError(s.toString());
+      BDLogger()
+        .error('Could not write zip file to GCP bucket', e, stackTrace: s);
       throw UnrecoverableException(
         'Could not upload to Gcloud storage ${zipFile.path}',
         ExitCode.tempFail.code,

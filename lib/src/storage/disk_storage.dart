@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/storage/storage.dart';
 import 'package:db_infra/src/utils/utils.dart';
 import 'package:io/io.dart';
@@ -13,22 +12,17 @@ class DiskStorage extends Storage {
   final Directory storageDirectory;
 
   ///
-  final Logger logger;
-
-  ///
   final Directory infraDirectory;
 
   ///
   const DiskStorage({
     required this.storageDirectory,
-    required this.logger,
     required this.infraDirectory,
   });
 
   /// Infrastructure disk storage from json.
   factory DiskStorage.fromJson(
     JsonMap json,
-    Logger logger,
     Directory infraDirectory,
   ) {
     final Object? storageDirectoryParam = json[_storageDirectoryKey];
@@ -48,7 +42,6 @@ class DiskStorage extends Storage {
 
     return DiskStorage(
       storageDirectory: storageDirectory,
-      logger: logger,
       infraDirectory: infraDirectory,
     );
   }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bdlogging/bdlogging.dart';
 import 'package:db_infra/src/apple/bundle_id/bundle_id.dart';
 import 'package:db_infra/src/apple/certificates/certificate.dart';
 import 'package:db_infra/src/apple/certificates/certificates_manager.dart';
@@ -9,7 +10,6 @@ import 'package:db_infra/src/apple/provision_profile/api/appstoreconnectapi_prof
 import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/build_signing_type.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:io/io.dart';
@@ -24,9 +24,6 @@ class ProvisionProfileManager {
   final CertificatesManager certificatesManager;
 
   ///
-  final Logger logger;
-
-  ///
   final ShellRunner runner;
 
   ///
@@ -36,7 +33,6 @@ class ProvisionProfileManager {
   const ProvisionProfileManager(
     this.certificatesManager,
     this._infraDirectory,
-    this.logger,
     this._api, {
     this.runner = const ShellRunner(),
   });
@@ -55,7 +51,7 @@ class ProvisionProfileManager {
 
   ///
   void importProvisionProfileLocally(final ProvisionProfile profile) {
-    logger.logInfo(
+    BDLogger().info(
       'Adding Provision profile ${profile.name} - ${profile.uuid} locally...',
     );
 
@@ -75,14 +71,14 @@ class ProvisionProfileManager {
       );
     }
 
-    logger.logSuccess(
+    BDLogger().info(
       'Added Provision Profile ${profile.name} - ${profile.uuid} locally.',
     );
   }
 
   ///
   void deleteProvisionProfileLocally(final ProvisionProfile profile) {
-    logger.logInfo(
+    BDLogger().info(
       'Removing Provision Profile ${profile.name} - ${profile.uuid} locally...',
     );
 
@@ -102,7 +98,7 @@ class ProvisionProfileManager {
       );
     }
 
-    logger.logSuccess(
+    BDLogger().info(
       'Removed Provision Profile ${profile.name} - ${profile.uuid} locally.',
     );
   }

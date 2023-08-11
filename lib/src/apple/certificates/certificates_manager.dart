@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:bdlogging/bdlogging.dart';
 import 'package:db_infra/src/apple/certificates/api/appstoreconnectapi_certificates.dart';
 import 'package:db_infra/src/apple/certificates/certificate.dart';
 import 'package:db_infra/src/apple/certificates/certificate_signing_request.dart';
 import 'package:db_infra/src/apple/certificates/certificate_type.dart';
 import 'package:db_infra/src/apple/certificates/keychains_manager.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:db_infra/src/utils/file_utils.dart';
@@ -52,15 +52,11 @@ class CertificatesManager {
   final AppStoreConnectApiCertificates _api;
 
   ///
-  final Logger logger;
-
-  ///
   final ShellRunner runner;
 
   ///
   CertificatesManager(
     this._keychainsManager,
-    this.logger,
     this._api, {
     this.runner = const ShellRunner(),
   });
@@ -87,7 +83,7 @@ class CertificatesManager {
 
     importCertificateFileLocally(certificateFile);
 
-    logger.logSuccess(
+    BDLogger().info(
       'Added certificate ${certificate.id} - ${certificate.name} '
       'of type ${certificate.type} locally',
     );
@@ -117,7 +113,7 @@ class CertificatesManager {
     return Future.forEach(certificates, (Certificate certificate) async {
       if (certificate.isDistribution()) {
         await _api.delete(certificate.id);
-        logger.logSuccess(
+        BDLogger().info(
           'Deleted certificate ${certificate.id} - ${certificate.name} '
           'of type ${certificate.type}',
         );
@@ -358,7 +354,7 @@ class CertificatesManager {
 
   void _getOrCreatePrivateKey(File? privateKey, String privateKeyFileName) {
     if (privateKey != null && privateKey.existsSync()) {
-      logger.logInfo('Reusing CSR Private Key $privateKeyFileName.');
+      BDLogger().info('Reusing CSR Private Key $privateKeyFileName.');
 
       File(privateKeyFileName).writeAsBytesSync(
         privateKey.readAsBytesSync(),
@@ -366,7 +362,7 @@ class CertificatesManager {
         flush: true,
       );
     } else {
-      logger.logInfo('Creating CSR Private Key $privateKeyFileName...');
+      BDLogger().info('Creating CSR Private Key $privateKeyFileName...');
 
       final ShellOutput rsaOutput = runner.execute(
         'openssl',
@@ -378,7 +374,7 @@ class CertificatesManager {
         throw UnrecoverableException(rsaOutput.stderr, ExitCode.tempFail.code);
       }
 
-      logger.logSuccess('Created CSR Private Key $privateKeyFileName.');
+      BDLogger().info('Created CSR Private Key $privateKeyFileName.');
     }
   }
 
@@ -388,7 +384,7 @@ class CertificatesManager {
     String? csrEmail,
     String? csrName,
   }) {
-    logger.logInfo(
+    BDLogger().info(
       'Creating $csrKeyFileName from Private Key $privateKeyFileName...',
     );
 
@@ -417,7 +413,7 @@ class CertificatesManager {
       throw UnrecoverableException(csrOutput.stderr, ExitCode.tempFail.code);
     }
 
-    logger.logSuccess(
+    BDLogger().info(
       'Created $csrKeyFileName from Private Key $privateKeyFileName',
     );
   }
@@ -426,7 +422,7 @@ class CertificatesManager {
     String privateKeyFileName,
     String publicKeyFileName,
   ) {
-    logger.logInfo(
+    BDLogger().info(
       'Creating $publicKeyFileName from Private Key $privateKeyFileName...',
     );
 
@@ -452,7 +448,7 @@ class CertificatesManager {
       );
     }
 
-    logger.logSuccess(
+    BDLogger().info(
       'Created $publicKeyFileName from Private Key $privateKeyFileName',
     );
   }

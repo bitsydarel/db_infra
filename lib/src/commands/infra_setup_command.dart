@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:bdlogging/bdlogging.dart';
 import 'package:db_infra/src/apple/bundle_id/bundle_id_manager.dart';
 import 'package:db_infra/src/apple/certificates/certificates_manager.dart';
 import 'package:db_infra/src/apple/device/device_manager.dart';
@@ -12,7 +13,6 @@ import 'package:db_infra/src/build_signing_type.dart';
 import 'package:db_infra/src/commands/base_command.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/encryptor/encryptor.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/setup_executor/android_setup_executor.dart';
 import 'package:db_infra/src/setup_executor/setup_executor.dart';
 import 'package:db_infra/src/storage/storage.dart';
@@ -202,8 +202,13 @@ class InfraSetupCommand extends BaseCommand {
     final ArgResults globalArgs = globalResults!;
     final ArgResults commandArgs = argResults!;
 
-    final Logger logger =
-        Logger(enableLogging: globalArgs.isVerbosityEnabled());
+    BDLogger().addHandler(
+      ConsoleLogHandler(
+        supportedLevels: globalArgs.isVerbosityEnabled()
+            ? BDLevel.levels
+            : <BDLevel>[BDLevel.warning, BDLevel.error],
+      ),
+    );
 
     final File configurationFile = globalArgs.getConfigurationFile();
 
@@ -214,14 +219,13 @@ class InfraSetupCommand extends BaseCommand {
     final InfraSetupConfiguration configuration = parseConfigurationArguments(
       commandArgs: commandArgs,
       infraDir: infraDir,
-      logger: logger,
     );
 
     final CertificatesManager certificatesManager =
-        configuration.getCertificatesManager(logger);
+        configuration.getCertificatesManager();
 
     final ProvisionProfileManager profilesManager =
-        configuration.getProfilesManager(certificatesManager, infraDir, logger);
+        configuration.getProfilesManager(certificatesManager, infraDir);
 
     final BundleIdManager bundleIdManager = configuration.getBundleManager();
 
@@ -234,10 +238,9 @@ class InfraSetupCommand extends BaseCommand {
       certificatesManager: certificatesManager,
       bundleIdManager: bundleIdManager,
       deviceManager: deviceManager,
-      logger: logger,
     );
 
-    logger.logInfo(
+    BDLogger().info(
       'Setting up ios infrastructure for ${configuration.iosAppId}...',
     );
 
@@ -247,10 +250,9 @@ class InfraSetupCommand extends BaseCommand {
     final AndroidSetupExecutor androidSetupExecutor = AndroidSetupExecutor(
       configuration: configuration,
       infraDirectory: infraDir,
-      logger: logger,
     );
 
-    logger.logInfo(
+    BDLogger().info(
       'Setting up android infrastructure for ${configuration.androidAppId}...',
     );
 
@@ -314,7 +316,7 @@ class InfraSetupCommand extends BaseCommand {
       configurationFile,
     );
 
-    logger.logInfo(
+    BDLogger().info(
       'Completed set up ios infrastructure for ${configuration.iosAppId} '
       'completed: ${configurationFile.path}',
     );
@@ -327,7 +329,6 @@ class InfraSetupCommand extends BaseCommand {
   InfraSetupConfiguration parseConfigurationArguments({
     required ArgResults commandArgs,
     required Directory infraDir,
-    required Logger logger,
   }) {
     final String? appId = commandArgs.parseOptionalString(appIdArg);
 
@@ -445,7 +446,6 @@ class InfraSetupCommand extends BaseCommand {
     final Storage infraStorage = commandArgs.getInfraStorage(
       infraStorageType,
       infraEncryptor,
-      logger,
       infraDir,
     );
 

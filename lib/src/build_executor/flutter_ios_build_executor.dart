@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:bdlogging/bdlogging.dart';
 import 'package:db_infra/src/apple/bundle_id/bundle_id_manager.dart';
 import 'package:db_infra/src/apple/certificates/certificate.dart';
 import 'package:db_infra/src/apple/certificates/certificates_manager.dart';
@@ -11,7 +12,6 @@ import 'package:db_infra/src/build_executor/build_executor.dart';
 import 'package:db_infra/src/build_output_type.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/environment_variable_handler/environment_variable_handler.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:io/io.dart';
@@ -32,9 +32,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
   final EnvironmentVariableHandler? environmentVariableHandler;
 
   ///
-  final Logger logger;
-
-  ///
   final ShellRunner runner;
 
   ///
@@ -42,7 +39,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     required this.provisionProfilesManager,
     required this.certificatesManager,
     required this.bundleIdManager,
-    required this.logger,
     required Directory projectDirectory,
     required InfraBuildConfiguration configuration,
     this.runner = const ShellRunner(),
@@ -137,14 +133,13 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       parentDirectory: iosFlutterDir,
       signingType: configuration.iosSigningType,
       provisionProfileType: configuration.iosProvisionProfileType,
-      logger: logger,
       developerTeamId: developerTeamId,
       provisionProfile: provisionProfile,
       certificate: certificate,
       envs: environmentVariables,
     );
 
-    logger.logInfo('Infra.xconfig\n${codeSigningConfig.readAsStringSync()}');
+    BDLogger().info('Infra.xconfig\n${codeSigningConfig.readAsStringSync()}');
 
     final File releaseConfig = File(
       path.join(iosFlutterDir.path, 'Release.xcconfig'),
@@ -182,10 +177,14 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       );
 
       if (output.stderr.isNotEmpty) {
-        logger
-          ..logInfo(output.stdout)
-          ..logError(output.stderr);
-        throw UnrecoverableException(output.stderr, ExitCode.tempFail.code);
+        final UnrecoverableException exception =
+            UnrecoverableException(output.stderr, ExitCode.tempFail.code);
+
+        BDLogger()
+          ..info(output.stdout)
+          ..error(output.stderr, exception);
+
+        throw exception;
       }
 
       _buildIpa();
@@ -208,10 +207,14 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       if (output.stderr.isNotEmpty) {
         cleanupProjectSigningConfiguration(codeSigningConfig, releaseConfig);
 
-        logger
-          ..logInfo(output.stdout)
-          ..logError(output.stderr);
-        throw UnrecoverableException(output.stderr, ExitCode.tempFail.code);
+        final UnrecoverableException exception =
+            UnrecoverableException(output.stderr, ExitCode.tempFail.code);
+
+        BDLogger()
+          ..info(output.stdout)
+          ..error(output.stderr, exception);
+
+        throw exception;
       }
     }
 
@@ -259,16 +262,19 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     );
 
     if (!exportArchive.stdout.contains('EXPORT SUCCEEDED')) {
-      logger
-        ..logInfo(exportArchive.stdout)
-        ..logError(exportArchive.stderr);
-      throw UnrecoverableException(
+      final UnrecoverableException exception = UnrecoverableException(
         exportArchive.stderr,
         ExitCode.tempFail.code,
       );
+
+      BDLogger()
+        ..info(exportArchive.stdout)
+        ..error(exportArchive.stderr, exception);
+
+      throw exception;
     }
 
-    logger.logInfo(
+    BDLogger().info(
       'Created Signing config for '
       '${configuration.iosProvisionProfileType.exportMethod} (by creating ipa)',
     );
@@ -300,16 +306,19 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     );
 
     if (!archiveOutput.stdout.contains('ARCHIVE SUCCEEDED')) {
-      logger
-        ..logInfo(archiveOutput.stdout)
-        ..logError(archiveOutput.stderr);
-      throw UnrecoverableException(
+      final UnrecoverableException exception = UnrecoverableException(
         archiveOutput.stderr,
         ExitCode.tempFail.code,
       );
+
+      BDLogger()
+        ..info(archiveOutput.stdout)
+        ..error(archiveOutput.stderr, exception);
+
+      throw exception;
     }
 
-    logger.logInfo(
+    BDLogger().info(
       'Created Signing config for Apple Development (by creating archive)',
     );
   }

@@ -1,8 +1,8 @@
 import 'dart:io';
 
+import 'package:bdlogging/bdlogging.dart';
 import 'package:db_infra/db_infra.dart';
 import 'package:db_infra/src/build_distributor/build_distributor.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:io/io.dart';
 import 'package:path/path.dart' as path;
@@ -11,15 +11,11 @@ import 'package:path/path.dart' as path;
 class FileToAppStoreConnectBuildDistributor extends BuildDistributor {
   ///
   const FileToAppStoreConnectBuildDistributor({
-    required this.logger,
     required this.projectDirectory,
     required InfraBuildConfiguration configuration,
     required BuildDistributorType buildDistributorType,
     this.runner = const ShellRunner(),
   }) : super(buildDistributorType, configuration);
-
-  ///
-  final Logger logger;
 
   ///
   final ShellRunner runner;
@@ -84,9 +80,9 @@ class FileToAppStoreConnectBuildDistributor extends BuildDistributor {
 
     if (commandOutput.stderr.isNotEmpty &&
         !commandOutput.stdout.contains('No errors uploading')) {
-      logger
-        ..logInfo(commandOutput.stdout)
-        ..logError(commandOutput.stderr);
+      BDLogger()
+        ..info(commandOutput.stdout)
+        ..info(commandOutput.stderr);
 
       throw UnrecoverableException(
         commandOutput.stderr,

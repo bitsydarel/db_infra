@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:args/args.dart';
+import 'package:bdlogging/bdlogging.dart';
 import 'package:db_infra/src/apple/bundle_id/bundle_id_manager.dart';
 import 'package:db_infra/src/apple/certificates/certificates_manager.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.dart';
@@ -11,7 +12,6 @@ import 'package:db_infra/src/build_executor/flutter_android_build_executor.dart'
 import 'package:db_infra/src/commands/base_command.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/environment_variable_handler/environment_variable_handler.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/utils/utils.dart';
 
 ///
@@ -59,8 +59,12 @@ class InfraBuildCommand extends BaseCommand {
     final ArgResults globalArgs = globalResults!;
     final ArgResults commandArgs = argResults!;
 
-    final Logger logger = Logger(
-      enableLogging: globalArgs.isVerbosityEnabled(),
+    BDLogger().addHandler(
+      ConsoleLogHandler(
+        supportedLevels: globalArgs.isVerbosityEnabled()
+            ? BDLevel.levels
+            : <BDLevel>[BDLevel.warning, BDLevel.error],
+      ),
     );
 
     final File configurationFile =
@@ -76,7 +80,6 @@ class InfraBuildCommand extends BaseCommand {
     final InfraBuildConfiguration buildConfiguration = await loadConfiguration(
       configuration: configurationFile,
       infraDirectory: infraDir,
-      logger: logger,
       aesPassword: aesEncryptorPassword,
     );
 
@@ -88,7 +91,6 @@ class InfraBuildCommand extends BaseCommand {
     ) {
       return _getBuildDistributor(
         commandArgs,
-        logger,
         projectDir,
         buildConfiguration,
         e,
@@ -105,15 +107,15 @@ class InfraBuildCommand extends BaseCommand {
     }
 
     final CertificatesManager certificatesManager =
-        buildConfiguration.getCertificatesManager(logger);
+        buildConfiguration.getCertificatesManager();
 
     final ProvisionProfileManager profilesManager = buildConfiguration
-        .getProfilesManager(certificatesManager, infraDir, logger);
+        .getProfilesManager(certificatesManager, infraDir);
 
     final BundleIdManager bundleIdManager =
         buildConfiguration.getBundleManager();
 
-    logger.logInfo(
+    BDLogger().info(
       'Building ${buildConfiguration.iosAppId} with '
       'configuration file: ${configurationFile.path}...',
     );
@@ -126,7 +128,6 @@ class InfraBuildCommand extends BaseCommand {
       provisionProfilesManager: profilesManager,
       certificatesManager: certificatesManager,
       bundleIdManager: bundleIdManager,
-      logger: logger,
       environmentVariableHandler: envHandler,
     ).build();
 
@@ -142,7 +143,6 @@ class InfraBuildCommand extends BaseCommand {
     );
 
     final File androidFlutterOutput = await FlutterAndroidBuildExecutor(
-      logger: logger,
       configuration: buildConfiguration,
       projectDirectory: projectDir,
       environmentVariableHandler: envHandler,
@@ -177,7 +177,6 @@ class InfraBuildCommand extends BaseCommand {
 
   BuildDistributor _getBuildDistributor(
     final ArgResults args,
-    final Logger logger,
     final Directory projectDirectory,
     final InfraBuildConfiguration configuration,
     final BuildDistributorType buildDistributorType,
@@ -186,7 +185,6 @@ class InfraBuildCommand extends BaseCommand {
         args.parseOptionalString(infraBuildOutputDirectoryArg);
 
     return buildDistributorType.toDistributor(
-      infraLogger: logger,
       projectDirectory: projectDirectory,
       configuration: configuration,
       outputDirectoryPath: outputDirectoryPath,

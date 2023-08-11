@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:bdlogging/bdlogging.dart';
 import 'package:db_infra/src/apple/bundle_id/bundle_id.dart';
 import 'package:db_infra/src/apple/bundle_id/bundle_id_manager.dart';
 import 'package:db_infra/src/apple/certificates/certificate.dart';
@@ -13,7 +14,6 @@ import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.d
 import 'package:db_infra/src/apple/provision_profile/provision_profile_type.dart';
 import 'package:db_infra/src/build_signing_type.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/setup_executor/setup_executor.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
@@ -35,9 +35,6 @@ class IosSetupExecutor extends SetupExecutor {
   final DeviceManager deviceManager;
 
   ///
-  final Logger logger;
-
-  ///
   final ShellRunner runner;
 
   ///
@@ -48,7 +45,6 @@ class IosSetupExecutor extends SetupExecutor {
     required this.certificatesManager,
     required this.bundleIdManager,
     required this.deviceManager,
-    required this.logger,
     this.runner = const ShellRunner(),
   }) : super(configuration, infraDirectory);
 
@@ -139,7 +135,7 @@ class IosSetupExecutor extends SetupExecutor {
     String provisionProfileName,
     CertificateSigningRequest csr,
   ) async {
-    logger.logInfo(
+    BDLogger().info(
       'Using existing Provision Profile provided $provisionProfileName...',
     );
     final ProvisionProfile? profile =
@@ -165,7 +161,7 @@ class IosSetupExecutor extends SetupExecutor {
       );
     }
 
-    logger.logInfo(
+    BDLogger().info(
       'Searching valid signing certificate '
       'for Provision profile ${profile.name}',
     );
@@ -174,7 +170,7 @@ class IosSetupExecutor extends SetupExecutor {
         await profilesManager.getValidCertificate(profile);
 
     if (validCertificate != null) {
-      logger.logSuccess(
+      BDLogger().info(
         'Found valid signing certificate '
         '${validCertificate.id} - ${validCertificate.name}',
       );
@@ -219,7 +215,7 @@ class IosSetupExecutor extends SetupExecutor {
     String appId,
     CertificateSigningRequest csr,
   ) async {
-    logger.logInfo('Creating new Provision profile for $appId');
+    BDLogger().info('Creating new Provision profile for $appId');
 
     final BundleId bundleId = await bundleIdManager.getOrCreateBundleId(appId);
 
@@ -234,14 +230,14 @@ class IosSetupExecutor extends SetupExecutor {
     final Certificate certificate;
 
     if (certificateSignedByKey?.type == certificateType) {
-      logger.logInfo(
+      BDLogger().info(
         'Found reusable ${certificateType.key} Certificate '
         'signed with ${csr.privateKey.path}',
       );
 
       certificate = certificateSignedByKey!;
     } else {
-      logger.logInfo(
+      BDLogger().info(
         'No reusable ${certificateType.key} Certificate found.\n'
         'Creating new one signed with ${csr.privateKey.path}...',
       );
@@ -249,7 +245,7 @@ class IosSetupExecutor extends SetupExecutor {
         csr.request,
         certificateType,
       );
-      logger.logSuccess(
+      BDLogger().info(
         '${certificate.type.key} Certificate '
         '${certificate.id} - ${certificate.name} created.',
       );

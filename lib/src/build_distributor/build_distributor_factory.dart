@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:db_infra/src/build_distributor/build_distributor.dart';
 import 'package:db_infra/src/build_distributor/file_to_app_store_connect_build_distributor.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:io/io.dart';
 
@@ -11,7 +10,6 @@ import 'package:io/io.dart';
 extension BuildDistributorExtension on BuildDistributorType {
   ///
   BuildDistributor toDistributor({
-    required final Logger infraLogger,
     required final Directory projectDirectory,
     required final InfraBuildConfiguration configuration,
     String? outputDirectoryPath,
@@ -25,7 +23,6 @@ extension BuildDistributorExtension on BuildDistributorType {
 
           return FileToDirectoryBuildDistributor(
             outputDirectory,
-            infraLogger,
             configuration,
             this,
           );
@@ -38,7 +35,6 @@ extension BuildDistributorExtension on BuildDistributorType {
         }
       case BuildDistributorType.appStoreConnect:
         return FileToAppStoreConnectBuildDistributor(
-          logger: infraLogger,
           projectDirectory: projectDirectory,
           buildDistributorType: this,
           configuration: configuration,

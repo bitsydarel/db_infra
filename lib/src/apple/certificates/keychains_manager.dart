@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:db_infra/src/logger.dart';
+import 'package:bdlogging/bdlogging.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:io/io.dart';
@@ -28,15 +28,11 @@ class KeychainsManager {
   late final String defaultKeychain;
 
   ///
-  final Logger logger;
-
-  ///
   final ShellRunner runner;
 
   ///
   KeychainsManager({
     required this.appKeychain,
-    required this.logger,
     this.runner = const ShellRunner(),
   }) {
     final List<String> keychains = listAllKeychains();
@@ -60,7 +56,7 @@ class KeychainsManager {
 
     defaultKeychain = getDefaultKeychain();
 
-    logger.logInfo('Default keychain for the user is $defaultKeychain');
+    BDLogger().info('Default keychain for the user is $defaultKeychain');
   }
 
   ///
@@ -98,8 +94,9 @@ class KeychainsManager {
     );
 
     if (output.stderr.contains(_keychainItemAlreadyExist)) {
-      logger.logError(
+      BDLogger().error(
         '${file.path} already exists in the $appKeychain keychain.',
+        Exception
       );
     } else if (output.stderr.isNotEmpty) {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
@@ -109,7 +106,7 @@ class KeychainsManager {
   ///
   @visibleForTesting
   void createKeychain(String name) {
-    logger.logInfo('Creating keychain $name...');
+    BDLogger().info('Creating keychain $name...');
 
     final ShellOutput output = runner.execute(
       'security',
@@ -122,12 +119,12 @@ class KeychainsManager {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
     }
 
-    logger.logSuccess('Created keychain $name.');
+    BDLogger().info('Created keychain $name.');
   }
 
   ///
   void deleteKeychain(String name) {
-    logger.logInfo('Deleting keychain $name...');
+    BDLogger().info('Deleting keychain $name...');
 
     final ShellOutput output = runner.execute(
       'security',
@@ -138,13 +135,13 @@ class KeychainsManager {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
     }
 
-    logger.logInfo('Deleted keychain $name.');
+    BDLogger().info('Deleted keychain $name.');
   }
 
   ///
   @visibleForTesting
   void unlockKeychain(final String name) {
-    logger.logInfo('Unlocking keychain $name...');
+    BDLogger().info('Unlocking keychain $name...');
 
     final ShellOutput output = runner.execute(
       'security',
@@ -155,13 +152,13 @@ class KeychainsManager {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
     }
 
-    logger.logInfo('Unlocked keychain $name');
+    BDLogger().info('Unlocked keychain $name');
   }
 
   ///
   @visibleForTesting
   void resetKeychainSettings(final String name) {
-    logger.logInfo('Resetting keychain $name...');
+    BDLogger().info('Resetting keychain $name...');
 
     final ShellOutput output = runner.execute(
       'security',
@@ -172,7 +169,7 @@ class KeychainsManager {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
     }
 
-    logger.logInfo('Reset keychain $name.');
+    BDLogger().info('Reset keychain $name.');
   }
 
   ///
@@ -197,7 +194,7 @@ class KeychainsManager {
         throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
       }
     } else {
-      logger.logError(
+      BDLogger().warning(
         'adding partition ids is not supported on this OS, skipping',
       );
     }
@@ -223,7 +220,7 @@ class KeychainsManager {
   ///
   @visibleForTesting
   void updateKeychainSearchPaths(List<String> keychains) {
-    logger.logInfo('Updating keychain search paths...');
+    BDLogger().info('Updating keychain search paths...');
 
     final ShellOutput output = runner.execute(
       'security',
@@ -234,7 +231,7 @@ class KeychainsManager {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
     }
 
-    logger.logInfo('Updated keychain search paths.');
+    BDLogger().info('Updated keychain search paths.');
   }
 
   ///
@@ -279,7 +276,7 @@ class KeychainsManager {
 
   ///
   void makeKeychainDefault(String keychain) {
-    logger.logInfo('Making keychain $keychain as default.');
+    BDLogger().info('Making keychain $keychain as default.');
 
     final ShellOutput output = runner.execute(
       'security',
@@ -290,7 +287,7 @@ class KeychainsManager {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
     }
 
-    logger.logInfo('$keychain is now default.');
+    BDLogger().info('$keychain is now default.');
   }
 
   ///

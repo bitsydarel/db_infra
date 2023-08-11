@@ -8,3 +8,9 @@
 
 - Added support for dotEnv file.
 - Error description and logging improvement.
+
+## 0.1.0
+
+- Raise min. Dart SDK to v3.0
+- Upgrade dependencies
+- Add new extension: `FileExtensions` to zip/unzip files

@@ -1,10 +1,10 @@
 import 'dart:io';
 
+import 'package:bdlogging/bdlogging.dart';
 import 'package:db_infra/src/build_executor/build_executor.dart';
 import 'package:db_infra/src/build_output_type.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/environment_variable_handler/environment_variable_handler.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/exceptions.dart';
 import 'package:io/io.dart';
@@ -14,7 +14,6 @@ import 'package:path/path.dart' as path;
 class FlutterAndroidBuildExecutor extends BuildExecutor {
   ///
   FlutterAndroidBuildExecutor({
-    required this.logger,
     required Directory projectDirectory,
     required InfraBuildConfiguration configuration,
     this.runner = const ShellRunner(),
@@ -23,9 +22,6 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
 
   ///
   final EnvironmentVariableHandler? environmentVariableHandler;
-
-  ///
-  final Logger logger;
 
   ///
   final ShellRunner runner;
@@ -77,10 +73,16 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
 
     if (output.stdout.contains('BUILD FAILED') ||
         output.stderr.contains('BUILD FAILED')) {
-      logger
-        ..logInfo(output.stdout)
-        ..logError(output.stderr);
-      throw UnrecoverableException(output.stderr, ExitCode.tempFail.code);
+      final UnrecoverableException exception = UnrecoverableException(
+        output.stderr,
+        ExitCode.tempFail.code,
+      );
+
+      BDLogger()
+        ..info(output.stdout)
+        ..error(output.stderr, exception);
+
+      throw exception;
     }
 
     final File? outputFile =

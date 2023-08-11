@@ -2,7 +2,6 @@ library storage;
 
 import 'dart:io';
 
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/storage/disk_storage.dart';
 import 'package:db_infra/src/storage/ftp_storage.dart';
 import 'package:db_infra/src/storage/google_cloud_storage.dart';
@@ -55,16 +54,15 @@ extension StorageByTypeFactoryExtension on StorageType {
   ///
   Storage fromJson(
     final JsonMap json,
-    final Logger logger,
     final Directory infraDirectory,
   ) {
     switch (this) {
       case StorageType.disk:
-        return DiskStorage.fromJson(json, logger, infraDirectory);
+        return DiskStorage.fromJson(json, infraDirectory);
       case StorageType.ftp:
-        return FtpStorage.fromJson(json, logger, infraDirectory);
+        return FtpStorage.fromJson(json, infraDirectory);
       case StorageType.googleCloud:
-        return GoogleCloudStorage.fromJson(json, logger, infraDirectory);
+        return GoogleCloudStorage.fromJson(json, infraDirectory);
       default:
         throw UnsupportedError('$name is not supported');
     }
@@ -72,7 +70,6 @@ extension StorageByTypeFactoryExtension on StorageType {
 
   ///
   Storage from({
-    required final Logger infraLogger,
     required final Directory infraDirectory,
     final Directory? storageDirectory,
     final String? ftpUsername,
@@ -90,7 +87,6 @@ extension StorageByTypeFactoryExtension on StorageType {
         if (storageDirectory != null) {
           return DiskStorage(
             storageDirectory: storageDirectory,
-            logger: infraLogger,
             infraDirectory: infraDirectory,
           );
         }
@@ -112,7 +108,6 @@ extension StorageByTypeFactoryExtension on StorageType {
             serverUrl: ftpServerUrl,
             serverPort: ftpServerPort,
             serverFolderName: ftpServerFolderName,
-            logger: infraLogger,
             infraDirectory: infraDirectory,
           );
         }
@@ -133,7 +128,6 @@ extension StorageByTypeFactoryExtension on StorageType {
             bucketFolder: gcloudBucketFolder,
             serviceAccount: gcloudServiceAccountFile.readAsStringSync(),
             gcloudProjectId: gcloudProjectId,
-            logger: infraLogger,
             infraDirectory: infraDirectory,
           );
         }

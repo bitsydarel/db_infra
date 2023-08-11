@@ -1,7 +1,7 @@
 import 'dart:io';
 
+import 'package:bdlogging/bdlogging.dart';
 import 'package:db_infra/db_infra.dart';
-import 'package:db_infra/src/logger.dart';
 import 'package:db_infra/src/storage/storage.dart';
 import 'package:db_infra/src/utils/utils.dart';
 import 'package:ftpconnect/ftpconnect.dart';
@@ -35,9 +35,6 @@ class FtpStorage extends Storage {
   final FTPConnect _ftpConnection;
 
   ///
-  final Logger logger;
-
-  ///
   final Directory infraDirectory;
 
   ///
@@ -47,7 +44,6 @@ class FtpStorage extends Storage {
     required this.serverUrl,
     required this.serverPort,
     required this.serverFolderName,
-    required this.logger,
     required this.infraDirectory,
     @visibleForTesting FTPConnect? ftpConnection,
   }) : _ftpConnection = ftpConnection ??
@@ -56,14 +52,13 @@ class FtpStorage extends Storage {
               user: username,
               pass: password,
               port: serverPort,
-              debug: logger.enableLogging,
+              logger: _DBInfraFtpLogger(),
               timeout: const Duration(minutes: 15).inSeconds,
             );
 
   ///
   factory FtpStorage.fromJson(
     JsonMap json,
-    Logger logger,
     Directory infraDirectory,
   ) {
     final Object? username = json[_usernameKey];
@@ -83,7 +78,6 @@ class FtpStorage extends Storage {
       serverPort: serverPort is String
           ? int.parse(serverPort.toString())
           : throw ArgumentError(serverPort.toString()),
-      logger: logger,
       infraDirectory: infraDirectory,
     );
   }
@@ -123,7 +117,7 @@ class FtpStorage extends Storage {
 
     await _ftpConnection.disconnect();
 
-    await FTPConnect.unZipFile(localZipFile, localDirectory.path);
+    await localZipFile.unzip(localDirectory.path);
 
     localZipFile.deleteSync();
 
@@ -146,14 +140,11 @@ class FtpStorage extends Storage {
       path.join(infraDirectory.path, _getZipFileName()),
     );
 
-    await FTPConnect.zipFiles(
-      files.map((File file) => file.path).toList(),
-      zipFile.path,
-    );
+    await zipFile.zip(files);
 
-    logger.logInfo(
-      'Creating directory $serverFolderName on ftp server if not exist.',
-    );
+    BDLogger().info(
+        'Creating directory $serverFolderName on ftp server if not exist.',
+        tag: toString());
 
     final List<String> directoryPaths = path.split(serverFolderName);
 
@@ -172,7 +163,7 @@ class FtpStorage extends Storage {
         await _ftpConnection.uploadFileWithRetry(zipFile, pRetryCount: 3);
 
     if (fileUploaded) {
-      logger.logSuccess('File uploads completed.');
+      BDLogger().info('File uploads completed.');
     } else {
       throw UnrecoverableException(
         'Could not upload to ftp server ${zipFile.path}',
@@ -224,4 +215,17 @@ class FtpStorage extends Storage {
   }
 
   String _getZipFileName() => 'data.zip';
+
+  @override
+  String toString() => 'FtpStorage${toString()}';
+}
+
+class _DBInfraFtpLogger implements Logger {
+  @override
+  bool get isEnabled => BDLogger().handlers.isNotEmpty;
+
+  @override
+  void log(String pMessage) {
+    BDLogger().info(pMessage, tag: 'FTP_CONNECT_LOGS');
+  }
 }
