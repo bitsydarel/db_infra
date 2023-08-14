@@ -113,6 +113,49 @@ class FlutterIosBuildExecutor extends BuildExecutor {
           ExitCode.tempFail.code,
         );
       }
+    } else {
+      final File? certificatePrivateKey =
+          configuration.iosCertificateSigningRequestPrivateKey;
+
+      final String? certificateId = configuration.iosCertificateId;
+
+      if (certificatePrivateKey != null && certificateId != null) {
+        if (!certificatePrivateKey.existsSync()) {
+          throw UnrecoverableException(
+            'Could not find certificate private key specified locally',
+            ExitCode.tempFail.code,
+          );
+        }
+
+        certificatesManager.importCertificateFileLocally(certificatePrivateKey);
+
+        certificate = await certificatesManager.getCertificate(certificateId);
+
+        if (certificate != null) {
+          if (certificate.hasExpired()) {
+            throw UnrecoverableException(
+              'iosCertificateId specified has expired, '
+              're-run the setup with a new certificate, '
+              'created with the same private key if possible',
+              ExitCode.config.code,
+            );
+          }
+
+          certificatesManager.importCertificateLocally(certificate);
+        }
+      } else if ((certificatePrivateKey != null && certificateId == null) ||
+          (certificatePrivateKey == null && certificateId != null)) {
+        throw UnrecoverableException(
+          'When developer id is set and certificate is specified, '
+          'then both private key and certificate need to set',
+          ExitCode.config.code,
+        );
+      } else {
+        BDLogger().warning(
+          'Certificates are not specified\n'
+          'Xcode will autogenerate a new certificate with a new private key',
+        );
+      }
     }
 
     if (!configuration.iosExportOptionsPlist.existsSync()) {
@@ -277,49 +320,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     BDLogger().info(
       'Created Signing config for '
       '${configuration.iosProvisionProfileType.exportMethod} (by creating ipa)',
-    );
-  }
-
-  void _buildArchive() {
-    final ShellOutput archiveOutput = runner.execute(
-      'xcodebuild',
-      <String>[
-        '-workspace',
-        'Runner.xcworkspace',
-        '-scheme',
-        'Runner',
-        '-sdk',
-        'iphoneos',
-        '-configuration',
-        'Release',
-        '-allowProvisioningUpdates',
-        '-authenticationKeyPath',
-        configuration.iosAppStoreConnectKey.path,
-        '-authenticationKeyID',
-        configuration.iosAppStoreConnectKeyId,
-        '-authenticationKeyIssuerID',
-        configuration.iosAppStoreConnectKeyIssuer,
-        'archive',
-        '-archivePath',
-        'build/Runner.xcarchive',
-      ],
-    );
-
-    if (!archiveOutput.stdout.contains('ARCHIVE SUCCEEDED')) {
-      final UnrecoverableException exception = UnrecoverableException(
-        archiveOutput.stderr,
-        ExitCode.tempFail.code,
-      );
-
-      BDLogger()
-        ..info(archiveOutput.stdout)
-        ..error(archiveOutput.stderr, exception);
-
-      throw exception;
-    }
-
-    BDLogger().info(
-      'Created Signing config for Apple Development (by creating archive)',
     );
   }
 }
