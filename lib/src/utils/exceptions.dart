@@ -66,3 +66,4 @@ class KeychainAlreadyExistException implements Exception {
   /// Create a constant instance of the [KeychainAlreadyExistException].
   const KeychainAlreadyExistException();
 }
+
