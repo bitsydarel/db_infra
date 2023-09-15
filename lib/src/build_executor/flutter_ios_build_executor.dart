@@ -279,47 +279,4 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       '${configuration.iosProvisionProfileType.exportMethod} (by creating ipa)',
     );
   }
-
-  void _buildArchive() {
-    final ShellOutput archiveOutput = runner.execute(
-      'xcodebuild',
-      <String>[
-        '-workspace',
-        'Runner.xcworkspace',
-        '-scheme',
-        'Runner',
-        '-sdk',
-        'iphoneos',
-        '-configuration',
-        'Release',
-        '-allowProvisioningUpdates',
-        '-authenticationKeyPath',
-        configuration.iosAppStoreConnectKey.path,
-        '-authenticationKeyID',
-        configuration.iosAppStoreConnectKeyId,
-        '-authenticationKeyIssuerID',
-        configuration.iosAppStoreConnectKeyIssuer,
-        'archive',
-        '-archivePath',
-        'build/Runner.xcarchive',
-      ],
-    );
-
-    if (!archiveOutput.stdout.contains('ARCHIVE SUCCEEDED')) {
-      final UnrecoverableException exception = UnrecoverableException(
-        archiveOutput.stderr,
-        ExitCode.tempFail.code,
-      );
-
-      BDLogger()
-        ..info(archiveOutput.stdout)
-        ..error(archiveOutput.stderr, exception);
-
-      throw exception;
-    }
-
-    BDLogger().info(
-      'Created Signing config for Apple Development (by creating archive)',
-    );
-  }
 }

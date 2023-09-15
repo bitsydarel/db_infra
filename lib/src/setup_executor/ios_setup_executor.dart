@@ -98,17 +98,6 @@ class IosSetupExecutor extends SetupExecutor {
         data = await createAndInstallProvisionProfile(appId, csr);
       }
 
-      if (data == null) {
-        throw UnrecoverableException(
-          'CSR and Private Key could not be found or created.\n'
-          'CSR Private Key provided: '
-          '${configuration.iosCertificateSigningRequestPrivateKeyPath}\n'
-          'CSR Name: ${configuration.iosCertificateSigningRequestName}\n'
-          'CSR Email: ${configuration.iosCertificateSigningRequestEmail}',
-          ExitCode.config.code,
-        );
-      }
-
       exportOptionsPlist = profilesManager.exportOptionsPlist(
         appId: appId,
         signingType: signingType,
@@ -260,6 +249,14 @@ class IosSetupExecutor extends SetupExecutor {
     final String? sha1 =
         certificatesManager.importCertificateLocally(certificate);
 
+    if (sha1 == null) {
+      throw UnrecoverableException(
+        'Could not retrieve certificate SHA1 for certificate: '
+        '${certificate.name} - ${certificate.id}',
+        ExitCode.osError.code,
+      );
+    }
+
     return _ProvisionProfileWithCertificateSha1(
       profile: profile,
       certificate: certificate,
@@ -326,21 +323,10 @@ class IosSetupExecutor extends SetupExecutor {
       configuration.iosProvisionProfileType,
     );
 
-    certificatesManager.importCertificateFileLocally(csr.privateKey);
-
-    final File? publicKey = csr.publicKey;
-
-    if (publicKey != null) {
-      certificatesManager.importCertificateFileLocally(publicKey);
-    }
-
-    final String? sha1 =
-        certificatesManager.importCertificateLocally(certificate);
-
-    return _ProvisionProfileWithCertificateSha1(
-      profile: newProfile,
-      certificate: certificate,
-      certificateSha1: sha1,
+    return _installCertificateForProvisionProfile(
+      csr,
+      certificate,
+      newProfile,
     );
   }
 
@@ -445,7 +431,7 @@ class IosSetupExecutor extends SetupExecutor {
 }
 
 class _ProvisionProfileWithCertificateSha1 {
-  final String? certificateSha1;
+  final String certificateSha1;
   final Certificate certificate;
   final ProvisionProfile profile;
 
