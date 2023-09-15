@@ -1,6 +1,6 @@
 name: db_infra
 description: A command-line tool that help to automate your release workflow.
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/db_infra
 
 

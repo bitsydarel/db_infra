@@ -84,8 +84,12 @@ class IosSetupExecutor extends SetupExecutor {
       _ProvisionProfileWithCertificateSha1? data;
 
       if (csr != null && provisionProfileName != null) {
-        data =
-            await getExistingProvisionProfile(appId, provisionProfileName, csr);
+        data = await getExistingProvisionProfile(
+          appId,
+          csr,
+          provisionProfileName,
+          configuration.iosProvisionProfileType,
+        );
       } else if (csr != null) {
         data = await createAndInstallProvisionProfile(appId, csr);
       } else {
@@ -94,7 +98,7 @@ class IosSetupExecutor extends SetupExecutor {
         data = await createAndInstallProvisionProfile(appId, csr);
       }
 
-      if (csr == null || data == null) {
+      if (data == null) {
         throw UnrecoverableException(
           'CSR and Private Key could not be found or created.\n'
           'CSR Private Key provided: '
@@ -108,7 +112,7 @@ class IosSetupExecutor extends SetupExecutor {
       exportOptionsPlist = profilesManager.exportOptionsPlist(
         appId: appId,
         signingType: signingType,
-        certificateSha1: data.sha1,
+        certificateSha1: data.certificateSha1,
         provisionProfile: data.profile,
         developerTeamId: developerTeamId,
         provisionProfileType: provisionProfileType,
@@ -132,8 +136,9 @@ class IosSetupExecutor extends SetupExecutor {
   @visibleForTesting
   Future<_ProvisionProfileWithCertificateSha1> getExistingProvisionProfile(
     String appId,
-    String provisionProfileName,
     CertificateSigningRequest csr,
+    String provisionProfileName,
+    ProvisionProfileType provisionProfileType,
   ) async {
     BDLogger().info(
       'Using existing Provision Profile provided $provisionProfileName...',
@@ -166,47 +171,100 @@ class IosSetupExecutor extends SetupExecutor {
       'for Provision profile ${profile.name}',
     );
 
-    final Certificate? validCertificate =
+    final List<Certificate> validCertificates =
         await profilesManager.getValidCertificate(profile);
 
-    if (validCertificate != null) {
+    if (validCertificates.isNotEmpty) {
       BDLogger().info(
-        'Found valid signing certificate '
-        '${validCertificate.id} - ${validCertificate.name}',
+        'Found valid signing certificates:\n'
+        '${validCertificates.map(
+              (Certificate e) => '${e.id} - ${e.name}',
+            ).join('\n')}',
       );
 
-      final bool isSignedByPrivateKey = await certificatesManager
-          .isSignedWithPrivateKey(validCertificate, csr.privateKey);
+      for (final Certificate certificate in validCertificates) {
+        final bool isSignedByPrivateKey = await certificatesManager
+            .isSignedWithPrivateKey(certificate, csr.privateKey);
 
-      if (isSignedByPrivateKey) {
-        certificatesManager.importCertificateFileLocally(csr.privateKey);
-
-        final File? publicKey = csr.publicKey;
-
-        if (publicKey != null) {
-          certificatesManager.importCertificateFileLocally(publicKey);
+        if (isSignedByPrivateKey) {
+          return _installCertificateForProvisionProfile(
+            csr,
+            certificate,
+            profile,
+          );
         }
-
-        final String? sha1 =
-            certificatesManager.importCertificateLocally(validCertificate);
-
-        return _ProvisionProfileWithCertificateSha1(profile, sha1);
       }
 
-      throw UnrecoverableException(
-        'Certificate ${validCertificate.name} with id '
-        '${validCertificate.id} was not signed with ${csr.privateKey.path}',
-        ExitCode.tempFail.code,
+      return _createNewCertificateForProfile(
+        csr,
+        profile,
+        provisionProfileType,
       );
     } else {
-      throw UnrecoverableException(
-        'Provision profile with id $provisionProfileName does not have '
-        'usable distribution certificate\n'
-        "Either create one in the developer portal or don't specify the "
-        'provision profile, we will create a new provision profile.',
-        ExitCode.config.code,
+      return _createNewCertificateForProfile(
+        csr,
+        profile,
+        provisionProfileType,
       );
     }
+  }
+
+  Future<_ProvisionProfileWithCertificateSha1> _createNewCertificateForProfile(
+    CertificateSigningRequest csr,
+    ProvisionProfile profile,
+    ProvisionProfileType provisionProfileType,
+  ) async {
+    BDLogger().warning(
+      'Did not find certificate signed with ${csr.privateKey.path}',
+    );
+
+    final CertificateType newCertificateType =
+        provisionProfileType.isDevelopment()
+            ? CertificateType.development
+            : CertificateType.distribution;
+
+    BDLogger().info(
+      'Creating a new certificate of type ${newCertificateType.name}',
+    );
+
+    final Certificate newCertificate =
+        await certificatesManager.createCertificate(
+      csr.request,
+      newCertificateType,
+    );
+
+    BDLogger().info(
+      'Created a new certificate ${newCertificate.name} - ${newCertificate.id}',
+    );
+
+    return _installCertificateForProvisionProfile(
+      csr,
+      newCertificate,
+      profile,
+    );
+  }
+
+  _ProvisionProfileWithCertificateSha1 _installCertificateForProvisionProfile(
+    CertificateSigningRequest csr,
+    Certificate certificate,
+    ProvisionProfile profile,
+  ) {
+    certificatesManager.importCertificateFileLocally(csr.privateKey);
+
+    final File? publicKey = csr.publicKey;
+
+    if (publicKey != null) {
+      certificatesManager.importCertificateFileLocally(publicKey);
+    }
+
+    final String? sha1 =
+        certificatesManager.importCertificateLocally(certificate);
+
+    return _ProvisionProfileWithCertificateSha1(
+      profile: profile,
+      certificate: certificate,
+      certificateSha1: sha1,
+    );
   }
 
   ///
@@ -279,7 +337,11 @@ class IosSetupExecutor extends SetupExecutor {
     final String? sha1 =
         certificatesManager.importCertificateLocally(certificate);
 
-    return _ProvisionProfileWithCertificateSha1(newProfile, sha1);
+    return _ProvisionProfileWithCertificateSha1(
+      profile: newProfile,
+      certificate: certificate,
+      certificateSha1: sha1,
+    );
   }
 
   ///
@@ -364,7 +426,7 @@ class IosSetupExecutor extends SetupExecutor {
       iosProvisionProfileName: profileData?.profile.name,
       iosProvisionProfileType:
           profileData?.profile.type ?? configuration.iosProvisionProfileType,
-      iosCertificateId: profileData?.profile.certificates.first.id,
+      iosCertificateId: profileData?.certificate.id,
       iosDeveloperTeamId: iosDeveloperTeamId,
       iosExportOptionsPlist: exportOptionsPlist,
       iosSigningType: signingType,
@@ -383,8 +445,13 @@ class IosSetupExecutor extends SetupExecutor {
 }
 
 class _ProvisionProfileWithCertificateSha1 {
+  final String? certificateSha1;
+  final Certificate certificate;
   final ProvisionProfile profile;
-  final String? sha1;
 
-  const _ProvisionProfileWithCertificateSha1(this.profile, this.sha1);
+  const _ProvisionProfileWithCertificateSha1({
+    required this.profile,
+    required this.certificate,
+    required this.certificateSha1,
+  });
 }

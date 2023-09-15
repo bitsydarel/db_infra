@@ -62,6 +62,11 @@ class CertificatesManager {
   });
 
   ///
+  Future<List<Certificate>> getCertificates() async {
+   return _api.getAll();
+  }
+
+  ///
   Future<Certificate?> getCertificate(String certificateId) async {
     final List<Certificate> certificates = await _api.getAll();
 

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:bdlogging/bdlogging.dart';
+import 'package:collection/collection.dart';
 import 'package:db_infra/src/apple/bundle_id/bundle_id.dart';
 import 'package:db_infra/src/apple/certificates/certificate.dart';
 import 'package:db_infra/src/apple/certificates/certificates_manager.dart';
@@ -202,10 +203,19 @@ class ProvisionProfileManager {
   }
 
   ///
-  Future<Certificate?> getValidCertificate(ProvisionProfile profile) async {
+  Future<List<Certificate>> getValidCertificate(
+    ProvisionProfile profile,
+  ) async {
+    final List<Certificate> validCertificates = <Certificate>[];
+
+    final List<Certificate> allCertificates =
+        await certificatesManager.getCertificates();
+
     for (final ProvisionProfileRelation relation in profile.certificates) {
       final Certificate? certificate =
-          await certificatesManager.getCertificate(relation.id);
+          allCertificates.firstWhereOrNull((Certificate certificate) {
+        return certificate.id == relation.id;
+      });
 
       if (certificate != null) {
         final bool isDevelopmentOrDistribution =
@@ -213,11 +223,12 @@ class ProvisionProfileManager {
 
         final bool hasExpired = certificate.hasExpired();
 
-        if (isDevelopmentOrDistribution || !hasExpired) {
-          return certificate;
+        if (isDevelopmentOrDistribution && !hasExpired) {
+          validCertificates.add(certificate);
         }
       }
     }
-    return null;
+
+    return validCertificates;
   }
 }
