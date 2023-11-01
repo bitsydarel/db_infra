@@ -236,7 +236,7 @@ class InfraBuildConfiguration extends Configuration {
           ? IosBuildSigningType.values.byName(signingType)
           : (developerTeamId != null
               ? IosBuildSigningType.automatic
-              : IosBuildSigningType.manuel),
+              : IosBuildSigningType.manual),
       storageType: infraStorageType,
       storage: infraStorageType.fromJson(storageAsJson, infraDir),
       encryptorType: encryptorType,

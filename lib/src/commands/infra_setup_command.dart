@@ -492,7 +492,7 @@ class InfraSetupCommand extends BaseCommand {
       iosDeveloperTeamId: iosDevelopmentTeamId,
       iosBuildSigningType: iosDevelopmentTeamId != null
           ? IosBuildSigningType.automatic
-          : IosBuildSigningType.manuel,
+          : IosBuildSigningType.manual,
     );
   }
 

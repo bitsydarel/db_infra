@@ -49,7 +49,7 @@ File createCodeSigningXCConfig({
     case IosBuildSigningType.automatic:
       newConfig.writeln('$codeSignStyleKey=Automatic');
       break;
-    case IosBuildSigningType.manuel:
+    case IosBuildSigningType.manual:
       newConfig.writeln('$codeSignStyleKey=Manual');
       break;
   }

@@ -4,5 +4,5 @@ enum IosBuildSigningType {
   automatic,
 
   ///
-  manuel,
+  manual,
 }
