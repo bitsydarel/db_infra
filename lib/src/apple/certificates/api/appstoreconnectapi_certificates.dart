@@ -101,7 +101,7 @@ class AppStoreConnectApiCertificates extends AppStoreConnectApi<Certificate> {
 
       final Object? rawJson = jsonDecode(response.body);
 
-      if (rawJson is Map<String, Object?>) {
+      if (rawJson is Map<String, Object?> && !rawJson.containsKey('errors')) {
         final GetCertificates certificates = GetCertificates.fromJson(rawJson);
 
         return certificates.data
