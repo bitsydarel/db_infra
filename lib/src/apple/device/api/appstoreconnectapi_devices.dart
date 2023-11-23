@@ -29,7 +29,10 @@ class AppStoreConnectApiDevices extends AppStoreConnectApi<Device> {
       );
 
       if (response.statusCode != HttpStatus.noContent) {
-        throw UnrecoverableException(response.body, ExitCode.tempFail.code);
+        throw UnrecoverableException(
+          response.asError(),
+          ExitCode.tempFail.code,
+        );
       }
     } on ClientException catch (ce) {
       throw UnrecoverableException(ce.message, ExitCode.tempFail.code);
@@ -83,7 +86,10 @@ class AppStoreConnectApiDevices extends AppStoreConnectApi<Device> {
             .toList();
       }
 
-      throw UnrecoverableException(rawResponse.body, ExitCode.tempFail.code);
+      throw UnrecoverableException(
+        rawResponse.asError(),
+        ExitCode.tempFail.code,
+      );
     } on ClientException catch (ce) {
       throw UnrecoverableException(ce.message, ExitCode.tempFail.code);
     }

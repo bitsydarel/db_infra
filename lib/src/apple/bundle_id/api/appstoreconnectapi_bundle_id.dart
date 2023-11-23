@@ -48,7 +48,7 @@ class AppStoreConnectApiBundleId extends AppStoreConnectApi<BundleId> {
         return bundleIdResponse.data.toDomain();
       }
 
-      throw UnrecoverableException(response.body, ExitCode.tempFail.code);
+      throw UnrecoverableException(response.asError(), ExitCode.tempFail.code);
     } on ClientException catch (ce) {
       throw UnrecoverableException(ce.message, ExitCode.tempFail.code);
     }
@@ -122,7 +122,7 @@ class AppStoreConnectApiBundleId extends AppStoreConnectApi<BundleId> {
             .toList();
       }
 
-      throw UnrecoverableException(response.body, ExitCode.tempFail.code);
+      throw UnrecoverableException(response.asError(), ExitCode.tempFail.code);
     } on ClientException catch (ce) {
       throw UnrecoverableException(ce.message, ExitCode.tempFail.code);
     }

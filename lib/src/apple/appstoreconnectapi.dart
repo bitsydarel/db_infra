@@ -134,3 +134,36 @@ extension _JWTExtension on JsonWebSignatureBuilder {
     );
   }
 }
+
+///
+extension ResponseExtensions on Response {
+  ///
+  String asError() {
+    final StringBuffer builder = StringBuffer();
+
+    final Map<String, String>? requestHeader = request?.headers;
+
+    if (requestHeader != null) {
+      builder
+        ..writeln('REQUEST HEADERS:')
+        ..writeln(
+          requestHeader.entries.map((MapEntry<String, String> keyValue) {
+            return '${keyValue.key}: ${keyValue.value}';
+          }).join('\n'),
+        );
+    }
+
+    builder
+      ..writeln('RESPONSE HEADERS:')
+      ..writeln(
+        headers.entries.map((MapEntry<String, String> keyValue) {
+          return '${keyValue.key}: ${keyValue.value}';
+        }).join('\n'),
+      )
+      ..writeln('RESPONSE STATUS CODE: $statusCode')
+      ..writeln('RESPONSE BODY:')
+      ..writeln(body);
+
+    return builder.toString();
+  }
+}

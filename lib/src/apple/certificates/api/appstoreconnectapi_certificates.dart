@@ -53,7 +53,7 @@ class AppStoreConnectApiCertificates extends AppStoreConnectApi<Certificate> {
         return certificate.data.toDomain();
       }
 
-      throw UnrecoverableException(response.body, ExitCode.tempFail.code);
+      throw UnrecoverableException(response.asError(), ExitCode.tempFail.code);
     } on ClientException catch (ce) {
       throw UnrecoverableException(ce.message, ExitCode.tempFail.code);
     }
@@ -72,7 +72,10 @@ class AppStoreConnectApiCertificates extends AppStoreConnectApi<Certificate> {
       );
 
       if (response.statusCode != HttpStatus.noContent) {
-        throw UnrecoverableException(response.body, ExitCode.tempFail.code);
+        throw UnrecoverableException(
+          response.asError(),
+          ExitCode.tempFail.code,
+        );
       }
     } on ClientException catch (ce) {
       throw UnrecoverableException(ce.message, ExitCode.tempFail.code);
@@ -111,7 +114,7 @@ class AppStoreConnectApiCertificates extends AppStoreConnectApi<Certificate> {
             .toList();
       }
 
-      throw UnrecoverableException(response.body, ExitCode.tempFail.code);
+      throw UnrecoverableException(response.asError(), ExitCode.tempFail.code);
     } on ClientException catch (ce) {
       throw UnrecoverableException(ce.message, ExitCode.tempFail.code);
     }
@@ -135,7 +138,7 @@ class AppStoreConnectApiCertificates extends AppStoreConnectApi<Certificate> {
         return CreateCertificateResponse.fromJson(rawJson).data.toDomain();
       }
 
-      throw UnrecoverableException(response.body, ExitCode.tempFail.code);
+      throw UnrecoverableException(response.asError(), ExitCode.tempFail.code);
     } on ClientException catch (ce) {
       throw UnrecoverableException(ce.message, ExitCode.tempFail.code);
     }

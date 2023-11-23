@@ -83,7 +83,10 @@ class AppStoreConnectApiProfiles extends AppStoreConnectApi<ProvisionProfile> {
         return response.data.toDomain();
       }
 
-      throw UnrecoverableException(rawResponse.body, ExitCode.tempFail.code);
+      throw UnrecoverableException(
+        rawResponse.asError(),
+        ExitCode.tempFail.code,
+      );
     } on ClientException catch (ce) {
       throw UnrecoverableException(ce.message, ExitCode.tempFail.code);
     }
@@ -165,7 +168,10 @@ class AppStoreConnectApiProfiles extends AppStoreConnectApi<ProvisionProfile> {
 
         return profilesResponse.toDomain();
       } else {
-        throw UnrecoverableException(response.body, ExitCode.tempFail.code);
+        throw UnrecoverableException(
+          response.asError(),
+          ExitCode.tempFail.code,
+        );
       }
     } on ClientException catch (ce) {
       throw UnrecoverableException(ce.message, ExitCode.tempFail.code);
