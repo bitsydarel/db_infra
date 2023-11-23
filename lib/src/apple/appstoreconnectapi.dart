@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:db_infra/src/configuration/configuration.dart';
@@ -148,7 +149,9 @@ extension ResponseExtensions on Response {
         ..writeln('REQUEST HEADERS:')
         ..writeln(
           requestHeader.entries.map((MapEntry<String, String> keyValue) {
-            return '${keyValue.key}: ${keyValue.value}';
+            return base64Encode(
+              utf8.encode('${keyValue.key}: ${keyValue.value}'),
+            );
           }).join('\n'),
         );
     }
