@@ -103,13 +103,17 @@ extension _JWTExtension on JsonWebSignatureBuilder {
   void addPayload(final Configuration configuration) {
     final String issuer = configuration.iosAppStoreConnectKeyIssuer;
 
-    final double inSeconds =
+    final double issuedAtInSeconds =
+        DateTime.now().millisecondsSinceEpoch / 1000;
+
+    final double expireAtInSeconds =
         DateTime.now().add(_defaultJwtTokenExp).millisecondsSinceEpoch / 1000;
 
     final JsonWebTokenClaims claims = JsonWebTokenClaims.fromJson(
       <String, Object>{
         'iss': issuer,
-        'exp': inSeconds.round(),
+        'iat': issuedAtInSeconds.round(),
+        'exp': expireAtInSeconds.round(),
         'aud': 'appstoreconnect-v1'
       },
     );
