@@ -75,6 +75,27 @@ class ProvisionProfileManager {
     BDLogger().info(
       'Added Provision Profile ${profile.name} - ${profile.uuid} locally.',
     );
+
+    final Iterable<String> profileDevices = profile.devices
+        .map(
+          (ProvisionProfileRelation device) => device.id,
+        )
+        .toList();
+
+    BDLogger().info(
+      'Provision Profile included devices:\n${profileDevices.join('\n')}',
+    );
+
+    final List<String> profileCertificates = profile.certificates
+        .map(
+          (ProvisionProfileRelation certificate) => certificate.id,
+        )
+        .toList();
+
+    BDLogger().info(
+
+      '\n${profileCertificates.join('\n')}',
+    );
   }
 
   ///
