@@ -96,7 +96,7 @@ class KeychainsManager {
     if (output.stderr.contains(_keychainItemAlreadyExist)) {
       BDLogger().error(
         '${file.path} already exists in the $appKeychain keychain.',
-        Exception
+        Exception,
       );
     } else if (output.stderr.isNotEmpty) {
       throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
@@ -132,7 +132,7 @@ class KeychainsManager {
     );
 
     if (output.stderr.isNotEmpty) {
-      throw UnrecoverableException(output.stderr, ExitCode.unavailable.code);
+      BDLogger().warning(output.stderr);
     }
 
     BDLogger().info('Deleted keychain $name.');

@@ -16,6 +16,9 @@ class InfraSetupConfiguration extends Configuration {
   final String? iosCertificateSigningRequestPrivateKeyPath;
 
   ///
+  final String? iosCertificateSigningRequestPublicKeyPath;
+
+  ///
   final String? iosCertificateSigningRequestName;
 
   ///
@@ -53,6 +56,7 @@ class InfraSetupConfiguration extends Configuration {
     required String androidStorePassword,
     required this.iosBuildSigningType,
     this.iosCertificateSigningRequestPrivateKeyPath,
+    this.iosCertificateSigningRequestPublicKeyPath,
     this.iosCertificateSigningRequestPath,
     this.iosCertificateSigningRequestName,
     this.iosCertificateSigningRequestEmail,

@@ -3,18 +3,18 @@ import 'dart:io';
 ///
 class CertificateSigningRequest {
   ///
-  final File request;
+  final File? request;
 
   ///
   final File privateKey;
 
   ///
-  final File? publicKey;
+  final File publicKey;
 
   ///
   CertificateSigningRequest({
-    required this.request,
+    required this.publicKey,
     required this.privateKey,
-    this.publicKey,
+    this.request,
   });
 }

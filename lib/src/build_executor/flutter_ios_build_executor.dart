@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:bdlogging/bdlogging.dart';
 import 'package:db_infra/src/apple/bundle_id/bundle_id_manager.dart';
 import 'package:db_infra/src/apple/certificates/certificate.dart';
+import 'package:db_infra/src/apple/certificates/certificate_type.dart';
 import 'package:db_infra/src/apple/certificates/certificates_manager.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile.dart';
 import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.dart';
@@ -56,16 +57,24 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       final File? certificatePrivateKey =
           configuration.iosCertificateSigningRequestPrivateKey;
 
+      final File? certificatePublicKey =
+          configuration.iosCertificateSigningRequestPublicKey;
+
       if (certificatePrivateKey == null ||
-          !certificatePrivateKey.existsSync()) {
+          !certificatePrivateKey.existsSync() ||
+          certificatePublicKey == null ||
+          !certificatePublicKey.existsSync()) {
         throw UnrecoverableException(
-          'iosCertificateSigningRequestPrivateKey is not set, '
+          'iosCertificateSigningRequestPrivateKey or '
+          'iosCertificateSigningRequestPublicKey is not set, '
           'did you properly run the setup ?',
           ExitCode.config.code,
         );
       }
 
-      certificatesManager.importCertificateFileLocally(certificatePrivateKey);
+      certificatesManager
+        ..importCertificateFileLocally(certificatePublicKey)
+        ..importCertificateFileLocally(certificatePrivateKey);
 
       final String? certificateId = configuration.iosCertificateId;
 
@@ -130,13 +139,13 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         await environmentVariableHandler?.call();
 
     final File codeSigningConfig = createCodeSigningXCConfig(
-      parentDirectory: iosFlutterDir,
-      signingType: configuration.iosSigningType,
-      provisionProfileType: configuration.iosProvisionProfileType,
-      developerTeamId: developerTeamId,
-      provisionProfile: provisionProfile,
       certificate: certificate,
       envs: environmentVariables,
+      parentDirectory: iosFlutterDir,
+      developerTeamId: developerTeamId,
+      provisionProfile: provisionProfile,
+      signingType: configuration.iosSigningType,
+      provisionProfileType: configuration.iosProvisionProfileType,
     );
 
     BDLogger().info('Infra.xconfig\n${codeSigningConfig.readAsStringSync()}');
@@ -158,11 +167,29 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     // Check if automatic signing is enabled, if yes than build project
     // with xcodebuild to allow it to created the required signing config.
     if (configuration.iosDeveloperTeamId != null &&
-        configuration.iosCertificateSigningRequestPrivateKey == null &&
         configuration.iosProvisionProfileName == null) {
-      Directory.current = path.join(projectDir, 'ios');
-
       await certificatesManager.enableAutomaticSigning();
+
+      final File? csrPrivateKeyFile =
+          configuration.iosCertificateSigningRequestPrivateKey;
+
+      final File? csrPublicKeyFile =
+          configuration.iosCertificateSigningRequestPublicKey;
+
+      if (csrPrivateKeyFile != null &&
+          csrPrivateKeyFile.existsSync() &&
+          csrPublicKeyFile != null &&
+          csrPublicKeyFile.existsSync()) {
+        await _findCertificateSignWithPrivateKey(
+          publicKeyFile: csrPublicKeyFile,
+          privateKeyFile: csrPrivateKeyFile,
+          certificateType: configuration.iosProvisionProfileType.isDevelopment()
+              ? CertificateType.development
+              : CertificateType.distribution,
+        );
+      }
+
+      Directory.current = projectDir;
 
       final ShellOutput output = runner.execute(
         'flutter',
@@ -187,6 +214,8 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         throw exception;
       }
 
+      Directory.current = path.join(projectDir, 'ios');
+
       _buildIpa();
 
       Directory.current = projectDir;
@@ -197,6 +226,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
           'build',
           configuration.iosBuildOutputType.name,
           '--release',
+          '--verbose',
           '--export-options-plist',
           configuration.iosExportOptionsPlist.path,
           if (dartDefines != null) ...dartDefines,
@@ -216,6 +246,8 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
         throw exception;
       }
+
+      BDLogger().info('Flutter Build Output:\n${output.stdout}');
     }
 
     Directory.current = oldPath;
@@ -240,14 +272,58 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     return outputFile;
   }
 
+  Future<void> _findCertificateSignWithPrivateKey({
+    required File publicKeyFile,
+    required File privateKeyFile,
+    required CertificateType certificateType,
+  }) async {
+    certificatesManager.importCertificateFileLocally(privateKeyFile);
+    BDLogger().info('Imported private key file: ${privateKeyFile.path}');
+
+    certificatesManager.importCertificateFileLocally(publicKeyFile);
+    BDLogger().info('Imported public key file: ${publicKeyFile.path}');
+
+    BDLogger().info('Fetching certificates available in the account...');
+
+    final List<Certificate> certificates =
+        await certificatesManager.getCertificates();
+
+    BDLogger().info('Found ${certificates.length} certificates');
+
+    for (final Certificate certificate in certificates) {
+      final bool isSignedByPrivateKey = await certificatesManager
+          .isSignedWithPrivateKey(certificate, privateKeyFile);
+
+      if (isSignedByPrivateKey &&
+          !certificate.hasExpired() &&
+          certificate.type == certificateType) {
+        final String? sha1 =
+            certificatesManager.importCertificateLocally(certificate);
+
+        BDLogger().info(
+          'Valid ${certificate.name} is signed with the specified private key\n'
+          'Certificate has been imported in keychain with sha1 $sha1',
+        );
+        return;
+      }
+    }
+
+    BDLogger().info(
+      'No valid certificates found signed with the specified private key '
+      'and of type $certificateType',
+    );
+  }
+
   void _buildIpa() {
     final ShellOutput exportArchive = runner.execute(
       'xcodebuild',
       <String>[
+        '-verbose',
         '-exportArchive',
         '-archivePath',
-        'build/Runner.xcarchive',
+        '../build/ios/archive/Runner.xcarchive',
         '-allowProvisioningUpdates',
+        '-allowProvisioningDeviceRegistration',
         '-authenticationKeyPath',
         configuration.iosAppStoreConnectKey.path,
         '-authenticationKeyID',
@@ -273,6 +349,10 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
       throw exception;
     }
+
+    BDLogger().info(
+      'XCODE BUILD OUTPUT:\n${exportArchive.stderr}\n${exportArchive.stdout}',
+    );
 
     BDLogger().info(
       'Created Signing config for '

@@ -74,6 +74,7 @@ class IosSetupExecutor extends SetupExecutor {
         signingType: signingType,
         iosDeveloperTeamId: developerTeamId,
         exportOptionsPlist: exportOptionsPlist,
+        certificateSigningRequest: getCertificateSigningRequestFile(),
       );
     } else {
       final String? provisionProfileName =
@@ -216,9 +217,14 @@ class IosSetupExecutor extends SetupExecutor {
       'Creating a new certificate of type ${newCertificateType.name}',
     );
 
+    final CertificateSigningRequest resolvedCsr =
+        csr.request != null && csr.request!.existsSync()
+            ? csr
+            : createCSRFromPrivateKey(csr.privateKey, csr.publicKey);
+
     final Certificate newCertificate =
         await certificatesManager.createCertificate(
-      csr.request,
+      resolvedCsr.request!,
       newCertificateType,
     );
 
@@ -238,13 +244,9 @@ class IosSetupExecutor extends SetupExecutor {
     Certificate certificate,
     ProvisionProfile profile,
   ) {
-    certificatesManager.importCertificateFileLocally(csr.privateKey);
-
-    final File? publicKey = csr.publicKey;
-
-    if (publicKey != null) {
-      certificatesManager.importCertificateFileLocally(publicKey);
-    }
+    certificatesManager
+      ..importCertificateFileLocally(csr.privateKey)
+      ..importCertificateFileLocally(csr.publicKey);
 
     final String? sha1 =
         certificatesManager.importCertificateLocally(certificate);
@@ -296,10 +298,17 @@ class IosSetupExecutor extends SetupExecutor {
         'No reusable ${certificateType.key} Certificate found.\n'
         'Creating new one signed with ${csr.privateKey.path}...',
       );
+
+      final CertificateSigningRequest resolvedCsr =
+          csr.request != null && csr.request!.existsSync()
+              ? csr
+              : createCSRFromPrivateKey(csr.privateKey, csr.publicKey);
+
       certificate = await certificatesManager.createCertificate(
-        csr.request,
+        resolvedCsr.request!,
         certificateType,
       );
+
       BDLogger().info(
         '${certificate.type.key} Certificate '
         '${certificate.id} - ${certificate.name} created.',
@@ -338,22 +347,19 @@ class IosSetupExecutor extends SetupExecutor {
     final String? csrPrivateKeyPath =
         configuration.iosCertificateSigningRequestPrivateKeyPath;
 
-    if (csrPrivateKeyPath != null) {
+    final String? csrPublicKeyPath =
+        configuration.iosCertificateSigningRequestPublicKeyPath;
+
+    if (csrPrivateKeyPath != null && csrPublicKeyPath != null) {
+      final File csrPublicKeyFile = File(csrPublicKeyPath);
       final File csrPrivateKeyFile = File(csrPrivateKeyPath);
 
-      if (csrPrivateKeyFile.existsSync()) {
-        final File csrFile;
-
-        if (csrPath != null) {
-          csrFile = File(csrPath);
-
-          return CertificateSigningRequest(
-            request: csrFile,
-            privateKey: csrPrivateKeyFile,
-          );
-        } else {
-          return createCSRFromPrivateKey(csrPrivateKeyFile);
-        }
+      if (csrPrivateKeyFile.existsSync() && csrPublicKeyFile.existsSync()) {
+        return CertificateSigningRequest(
+          request: csrPath != null ? File(csrPath) : null,
+          publicKey: csrPublicKeyFile,
+          privateKey: csrPrivateKeyFile,
+        );
       }
     }
 
@@ -364,15 +370,17 @@ class IosSetupExecutor extends SetupExecutor {
   @visibleForTesting
   CertificateSigningRequest createCSRFromPrivateKey(
     File privateKey,
+    File publicKey,
   ) {
     final String? csrName = configuration.iosCertificateSigningRequestName;
     final String? csrEmail = configuration.iosCertificateSigningRequestEmail;
 
     return certificatesManager.createCertificateSigningRequest(
-      configuration.iosAppId,
-      csrEmail,
-      csrName,
-      privateKey,
+      appId: configuration.iosAppId,
+      csrEmail: csrEmail,
+      csrName: csrName,
+      privateKey: privateKey,
+      publicKey: publicKey,
     );
   }
 
@@ -383,9 +391,9 @@ class IosSetupExecutor extends SetupExecutor {
     final String? csrEmail = configuration.iosCertificateSigningRequestEmail;
 
     return certificatesManager.createCertificateSigningRequest(
-      configuration.iosAppId,
-      csrEmail,
-      csrName,
+      appId: configuration.iosAppId,
+      csrEmail: csrEmail,
+      csrName: csrName,
     );
   }
 
@@ -405,6 +413,8 @@ class IosSetupExecutor extends SetupExecutor {
       iosCertificateSigningRequest: certificateSigningRequest?.request,
       iosCertificateSigningRequestPrivateKey:
           certificateSigningRequest?.privateKey,
+      iosCertificateSigningRequestPublicKey:
+          certificateSigningRequest?.publicKey,
       iosCertificateSigningRequestName:
           configuration.iosCertificateSigningRequestName,
       iosCertificateSigningRequestEmail:

@@ -63,7 +63,7 @@ class CertificatesManager {
 
   ///
   Future<List<Certificate>> getCertificates() async {
-   return _api.getAll();
+    return _api.getAll();
   }
 
   ///
@@ -316,26 +316,31 @@ class CertificatesManager {
   }
 
   ///
-  CertificateSigningRequest createCertificateSigningRequest(
-    final String appId, [
+  CertificateSigningRequest createCertificateSigningRequest({
+    required final String appId,
     final String? csrEmail,
     final String? csrName,
     final File? privateKey,
-  ]) {
+    final File? publicKey,
+  }) {
     final String privateKeyFileName = '$appId-private.pem';
     final String publicKeyFileName = '$appId-public.pem';
     final String csrKeyFileName = '$appId.certSigningRequest';
 
     _getOrCreatePrivateKey(privateKey, privateKeyFileName);
 
-    _createCsrKey(
+    _getOrCreatePublicRsaKey(
+      publicKeyFile: publicKey,
+      publicKeyFileName: publicKeyFileName,
       privateKeyFileName: privateKeyFileName,
+    );
+
+    _createCsrKey(
       csrKeyFileName: csrKeyFileName,
+      privateKeyFileName: privateKeyFileName,
       csrEmail: csrEmail,
       csrName: csrName,
     );
-
-    _createPublicRsaKey(privateKeyFileName, publicKeyFileName);
 
     final File csrFile = File(csrKeyFileName);
     final File privateKeyFile = File(privateKeyFileName);
@@ -359,7 +364,7 @@ class CertificatesManager {
 
   void _getOrCreatePrivateKey(File? privateKey, String privateKeyFileName) {
     if (privateKey != null && privateKey.existsSync()) {
-      BDLogger().info('Reusing CSR Private Key $privateKeyFileName.');
+      BDLogger().info('Reusing CSR Private Key ${privateKey.path}.');
 
       File(privateKeyFileName).writeAsBytesSync(
         privateKey.readAsBytesSync(),
@@ -380,6 +385,52 @@ class CertificatesManager {
       }
 
       BDLogger().info('Created CSR Private Key $privateKeyFileName.');
+    }
+  }
+
+  void _getOrCreatePublicRsaKey({
+    required String privateKeyFileName,
+    required String publicKeyFileName,
+    File? publicKeyFile,
+  }) {
+    if (publicKeyFile != null && publicKeyFile.existsSync()) {
+      BDLogger().info('Reusing CSR Public Key ${publicKeyFile.path}.');
+
+      File(publicKeyFileName).writeAsBytesSync(
+        publicKeyFile.readAsBytesSync(),
+        mode: FileMode.writeOnly,
+        flush: true,
+      );
+    } else {
+      BDLogger().info(
+        'Creating $publicKeyFileName from Private Key $privateKeyFileName...',
+      );
+
+      final ShellOutput publicRsaOutput = runner.execute(
+        'openssl',
+        <String>[
+          'rsa',
+          '-in',
+          privateKeyFileName,
+          '-outform',
+          'PEM',
+          '-pubout',
+          '-out',
+          publicKeyFileName,
+        ],
+      );
+
+      if (publicRsaOutput.stderr.isNotEmpty &&
+          !publicRsaOutput.stderr.contains('writing RSA key')) {
+        throw UnrecoverableException(
+          publicRsaOutput.stderr,
+          ExitCode.tempFail.code,
+        );
+      }
+
+      BDLogger().info(
+        'Created $publicKeyFileName from Private Key $privateKeyFileName',
+      );
     }
   }
 
@@ -420,41 +471,6 @@ class CertificatesManager {
 
     BDLogger().info(
       'Created $csrKeyFileName from Private Key $privateKeyFileName',
-    );
-  }
-
-  void _createPublicRsaKey(
-    String privateKeyFileName,
-    String publicKeyFileName,
-  ) {
-    BDLogger().info(
-      'Creating $publicKeyFileName from Private Key $privateKeyFileName...',
-    );
-
-    final ShellOutput publicRsaOutput = runner.execute(
-      'openssl',
-      <String>[
-        'rsa',
-        '-in',
-        privateKeyFileName,
-        '-outform',
-        'PEM',
-        '-pubout',
-        '-out',
-        publicKeyFileName,
-      ],
-    );
-
-    if (publicRsaOutput.stderr.isNotEmpty &&
-        !publicRsaOutput.stderr.contains('writing RSA key')) {
-      throw UnrecoverableException(
-        publicRsaOutput.stderr,
-        ExitCode.tempFail.code,
-      );
-    }
-
-    BDLogger().info(
-      'Created $publicKeyFileName from Private Key $privateKeyFileName',
     );
   }
 
@@ -501,7 +517,9 @@ class CertificatesManager {
 
   ///
   Future<void> cleanupLocally() async {
-    _keychainsManager.deleteKeychain(_keychainsManager.appKeychain);
+    _keychainsManager
+      ..makeKeychainDefault(_keychainsManager.defaultKeychain)
+      ..deleteKeychain(_keychainsManager.appKeychain);
   }
 }
 

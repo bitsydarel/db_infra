@@ -109,8 +109,8 @@ class InfraBuildCommand extends BaseCommand {
     final CertificatesManager certificatesManager =
         buildConfiguration.getCertificatesManager();
 
-    final ProvisionProfileManager profilesManager = buildConfiguration
-        .getProfilesManager(certificatesManager, infraDir);
+    final ProvisionProfileManager profilesManager =
+        buildConfiguration.getProfilesManager(certificatesManager, infraDir);
 
     final BundleIdManager bundleIdManager =
         buildConfiguration.getBundleManager();
@@ -122,14 +122,21 @@ class InfraBuildCommand extends BaseCommand {
 
     await decryptInfraFiles(infraDir, buildConfiguration);
 
-    final File iosFlutterOutput = await FlutterIosBuildExecutor(
-      projectDirectory: projectDir,
-      configuration: buildConfiguration,
-      provisionProfilesManager: profilesManager,
-      certificatesManager: certificatesManager,
-      bundleIdManager: bundleIdManager,
-      environmentVariableHandler: envHandler,
-    ).build();
+    final File iosFlutterOutput;
+
+    try {
+      iosFlutterOutput = await FlutterIosBuildExecutor(
+        projectDirectory: projectDir,
+        configuration: buildConfiguration,
+        provisionProfilesManager: profilesManager,
+        certificatesManager: certificatesManager,
+        bundleIdManager: bundleIdManager,
+        environmentVariableHandler: envHandler,
+      ).build();
+    } on Object catch (_) {
+      certificatesManager.cleanupLocally();
+      rethrow;
+    }
 
     await Future.forEach(
       buildDistributors,

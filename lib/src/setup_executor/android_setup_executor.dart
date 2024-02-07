@@ -22,13 +22,6 @@ class AndroidSetupExecutor extends SetupExecutor {
 
     return InfraBuildConfiguration(
       androidAppId: appId,
-      iosAppId: configuration.iosAppId,
-      iosAppStoreConnectKeyId: configuration.iosAppStoreConnectKeyId,
-      iosAppStoreConnectKeyIssuer: configuration.iosAppStoreConnectKeyIssuer,
-      iosAppStoreConnectKey: configuration.iosAppStoreConnectKey,
-      iosProvisionProfileType: configuration.iosProvisionProfileType,
-      iosBuildOutputType: configuration.iosBuildOutputType,
-      iosExportOptionsPlist: File('Not used for android'),
       androidKeyAlias: configuration.androidKeyAlias,
       androidStoreFile: configuration.androidStoreFile,
       androidKeyPassword: configuration.androidKeyPassword,
@@ -38,7 +31,21 @@ class AndroidSetupExecutor extends SetupExecutor {
       encryptor: configuration.encryptor,
       storageType: configuration.storageType,
       encryptorType: configuration.encryptorType,
+      iosAppId: configuration.iosAppId,
       iosSigningType: configuration.iosBuildSigningType,
+      iosBuildOutputType: configuration.iosBuildOutputType,
+      iosAppStoreConnectKey: configuration.iosAppStoreConnectKey,
+      iosExportOptionsPlist: File('Not used for android'),
+      iosAppStoreConnectKeyId: configuration.iosAppStoreConnectKeyId,
+      iosProvisionProfileType: configuration.iosProvisionProfileType,
+      iosAppStoreConnectKeyIssuer: configuration.iosAppStoreConnectKeyIssuer,
+      iosCertificateSigningRequestName:
+          configuration.iosCertificateSigningRequestName,
+      iosCertificateSigningRequestEmail:
+          configuration.iosCertificateSigningRequestEmail,
+      iosProvisionProfileName: configuration.iosProvisionProfileName,
+      iosCertificateId: configuration.iosCertificateId,
+      iosDeveloperTeamId: configuration.iosDeveloperTeamId,
     );
   }
 }

@@ -64,9 +64,18 @@ class InfraSetupCommand extends BaseCommand {
         help: 'Specify the Certificate Signing Request (CSR) Private Key path.',
       )
       ..addOption(
+        iosCertificateSigningRequestPublicKeyPathArg,
+        help: 'Specify the Certificate Signing Request (CSR) Public Key path.',
+      )
+      ..addOption(
         iosCertificateSigningRequestPrivateKeyBase64Arg,
         help: 'Specify the Certificate Signing Request (CSR) '
             'Private Key as base64.',
+      )
+      ..addOption(
+        iosCertificateSigningRequestPublicKeyBase64Arg,
+        help: 'Specify the Certificate Signing Request (CSR) '
+            'Public Key as base64.',
       )
       ..addOption(
         iosCertificateSigningRequestEmailArg,
@@ -244,8 +253,14 @@ class InfraSetupCommand extends BaseCommand {
       'Setting up ios infrastructure for ${configuration.iosAppId}...',
     );
 
-    final InfraBuildConfiguration iosBuildConfiguration =
-        await iosSetupExecutor.setupInfra();
+    final InfraBuildConfiguration iosBuildConfiguration;
+
+    try {
+      iosBuildConfiguration = await iosSetupExecutor.setupInfra();
+    } on Object catch (_) {
+      certificatesManager.cleanupLocally();
+      rethrow;
+    }
 
     final AndroidSetupExecutor androidSetupExecutor = AndroidSetupExecutor(
       configuration: configuration,
@@ -265,10 +280,15 @@ class InfraSetupCommand extends BaseCommand {
     final File? iosCertificateSigningRequestPrivateKey =
         iosBuildConfiguration.iosCertificateSigningRequestPrivateKey;
 
+    final File? iosCertificateSigningRequestPublicKey =
+        iosBuildConfiguration.iosCertificateSigningRequestPublicKey;
+
     final List<File> filesToEncrypt = <File>[
       if (iosCertificateSigningRequest != null) iosCertificateSigningRequest,
       if (iosCertificateSigningRequestPrivateKey != null)
         iosCertificateSigningRequestPrivateKey,
+      if (iosCertificateSigningRequestPublicKey != null)
+        iosCertificateSigningRequestPublicKey,
       iosBuildConfiguration.iosExportOptionsPlist,
       iosBuildConfiguration.iosAppStoreConnectKey,
       androidBuildConfiguration.androidStoreFile,
@@ -294,6 +314,8 @@ class InfraSetupCommand extends BaseCommand {
             iosBuildConfiguration.iosCertificateSigningRequest,
         iosCertificateSigningRequestPrivateKey:
             iosBuildConfiguration.iosCertificateSigningRequestPrivateKey,
+        iosCertificateSigningRequestPublicKey:
+            iosBuildConfiguration.iosCertificateSigningRequestPublicKey,
         iosCertificateSigningRequestName:
             iosBuildConfiguration.iosCertificateSigningRequestName,
         iosCertificateSigningRequestEmail:
@@ -384,6 +406,21 @@ class InfraSetupCommand extends BaseCommand {
       '$iOSAppId-csr-private-key',
     );
 
+    final String? iosCSRPublicKeyPath = parseOptionalCertificate(
+      iosCertificateSigningRequestPublicKeyPathArg,
+      iosCertificateSigningRequestPublicKeyBase64Arg,
+      '$iOSAppId-csr-public-key',
+    );
+
+    if ((iosCSRPrivateKeyPath != null && iosCSRPublicKeyPath == null) ||
+        (iosCSRPublicKeyPath != null && iosCSRPrivateKeyPath == null)) {
+      throw FormatException(
+        'Both CSR private key and public key need to be provided\n'
+        'CSR Private key: $iosCSRPrivateKeyPath\n'
+        'CSR Public key: $iosCSRPublicKeyPath',
+      );
+    }
+
     final String iosProvisionProfileType =
         commandArgs.parseString(iosProvisionProfileTypeArg);
 
@@ -391,13 +428,16 @@ class InfraSetupCommand extends BaseCommand {
         commandArgs.parseOptionalString(iosDevelopmentTeamIdArg);
 
     if (iosCSRPrivateKeyPath == null &&
+        iosCSRPublicKeyPath == null &&
         iosCSREmail == null &&
         iosCSRName == null &&
         iosDevelopmentTeamId == null) {
       throw const FormatException(
         'CSR private-key must be specified\nSpecify '
         '($iosCertificateSigningRequestPrivateKeyPathArg or '
-        '$iosCertificateSigningRequestPrivateKeyBase64Arg) '
+        '$iosCertificateSigningRequestPrivateKeyBase64Arg) and '
+        '($iosCertificateSigningRequestPublicKeyPathArg or '
+        '$iosCertificateSigningRequestPublicKeyBase64Arg)'
         'to use a existing certificates.'
         '\nSpecify ($iosCertificateSigningRequestEmailArg and '
         '$iosCertificateSigningRequestNameArg) '
@@ -423,7 +463,7 @@ class InfraSetupCommand extends BaseCommand {
         '$iosProvisionProfileNameArg cannot be specified without '
         'providing ($iosCertificateSigningRequestPrivateKeyPathArg or '
         "$iosCertificateSigningRequestPrivateKeyBase64Arg)\nBecause it's "
-        'needed to use the distribution certificate for code signing.',
+        'needed to find the distribution certificate for code signing.',
       );
     }
 
@@ -474,6 +514,7 @@ class InfraSetupCommand extends BaseCommand {
       iosAppStoreConnectKey: iosAppStoreConnectKeyPath,
       iosCertificateSigningRequestPath: iosCSRPath,
       iosCertificateSigningRequestPrivateKeyPath: iosCSRPrivateKeyPath,
+      iosCertificateSigningRequestPublicKeyPath: iosCSRPublicKeyPath,
       iosCertificateSigningRequestEmail: iosCSREmail,
       iosCertificateSigningRequestName: iosCSRName,
       iosProvisionProfileName: iosProvisionProfileName,

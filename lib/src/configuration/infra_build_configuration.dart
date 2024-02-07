@@ -19,6 +19,9 @@ class InfraBuildConfiguration extends Configuration {
   final File? iosCertificateSigningRequestPrivateKey;
 
   ///
+  final File? iosCertificateSigningRequestPublicKey;
+
+  ///
   final String? iosCertificateSigningRequestName;
 
   ///
@@ -60,6 +63,7 @@ class InfraBuildConfiguration extends Configuration {
     required this.iosExportOptionsPlist,
     required this.iosSigningType,
     this.iosCertificateSigningRequest,
+    this.iosCertificateSigningRequestPublicKey,
     this.iosCertificateSigningRequestPrivateKey,
     this.iosCertificateSigningRequestName,
     this.iosCertificateSigningRequestEmail,
@@ -107,6 +111,9 @@ class InfraBuildConfiguration extends Configuration {
 
     final Object? iosCertificateSigningRequestPrivateKey =
         json[iosCertificateSigningRequestPrivateKeyPathArg];
+
+    final Object? iosCertificateSigningRequestPublicKey =
+        json[iosCertificateSigningRequestPublicKeyPathArg];
 
     final Object? iosCertificateSigningRequestName =
         json[iosCertificateSigningRequestNameArg];
@@ -185,6 +192,14 @@ class InfraBuildConfiguration extends Configuration {
                   : throw ArgumentError(
                       iosCertificateSigningRequestPrivateKey,
                     )),
+      iosCertificateSigningRequestPublicKey:
+          iosCertificateSigningRequestPublicKey is String
+              ? File('${infraDir.path}/$iosCertificateSigningRequestPublicKey')
+              : (developerTeamId is String
+                  ? null
+                  : throw ArgumentError(
+                      iosCertificateSigningRequestPublicKey,
+                    )),
       iosCertificateSigningRequestName:
           iosCertificateSigningRequestName is String
               ? iosCertificateSigningRequestName
@@ -261,6 +276,10 @@ class InfraBuildConfiguration extends Configuration {
       iosCertificateSigningRequestPrivateKeyPathArg:
           iosCertificateSigningRequestPrivateKey != null
               ? path.basename(iosCertificateSigningRequestPrivateKey!.path)
+              : null,
+      iosCertificateSigningRequestPublicKeyPathArg:
+          iosCertificateSigningRequestPublicKey != null
+              ? path.basename(iosCertificateSigningRequestPublicKey!.path)
               : null,
       iosCertificateSigningRequestNameArg: iosCertificateSigningRequestName,
       iosCertificateSigningRequestEmailArg: iosCertificateSigningRequestEmail,

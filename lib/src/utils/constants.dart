@@ -38,9 +38,17 @@ const String iosCertificateSigningRequestBase64Arg = 'ios-csr-base64';
 const String iosCertificateSigningRequestPrivateKeyPathArg =
     'ios-csr-private-key-path';
 
+/// iOS certificate signing request public key path.
+const String iosCertificateSigningRequestPublicKeyPathArg =
+    'ios-csr-public-key-path';
+
 /// iOS certificate signing request private key base64.
 const String iosCertificateSigningRequestPrivateKeyBase64Arg =
     'ios-csr-private-key-base64';
+
+/// iOS certificate signing request public key base64.
+const String iosCertificateSigningRequestPublicKeyBase64Arg =
+    'ios-csr-public-key-base64';
 
 /// iOS certificate signing request email.
 const String iosCertificateSigningRequestEmailArg = 'ios-csr-email';
