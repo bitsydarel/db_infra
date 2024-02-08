@@ -324,6 +324,11 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       'build/Runner.xcarchive',
     );
 
+    print(runner.execute('ls', ['../build/ios']).stdout);
+
+    print(xcArchiveFileFromFlutterBuild.path);
+    print(xcArchiveFileFromIosBuild.path);
+
     final ShellOutput exportArchive = runner.execute(
       'xcodebuild',
       <String>[
