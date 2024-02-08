@@ -214,6 +214,8 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         throw exception;
       }
 
+      print(output.stdout);
+
       Directory.current = path.join(projectDir, 'ios');
 
       _buildIpa();
@@ -315,20 +317,12 @@ class FlutterIosBuildExecutor extends BuildExecutor {
   }
 
   void _buildIpa() {
-    final Directory xcArchiveFileFromFlutterBuild = Directory(path.joinAll([
-      projectDirectory.path,
-      'build',
-      'ios',
-      'archive',
-      'Runner.xcarchive',
-    ]));
+    final Directory xcArchiveFileFromFlutterBuild =
+        Directory('../build/ios/archive/Runner.xcarchive');
 
-    final Directory xcArchiveFileFromIosBuild = Directory(path.joinAll([
-      projectDirectory.path,
-      'ios',
-      'build',
-      'Runner.xcarchive',
-    ]));
+    final Directory xcArchiveFileFromIosBuild = Directory(
+      'build/Runner.xcarchive',
+    );
 
     final ShellOutput exportArchive = runner.execute(
       'xcodebuild',
