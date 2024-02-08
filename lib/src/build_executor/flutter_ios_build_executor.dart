@@ -195,7 +195,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         'flutter',
         <String>[
           'build',
-          'ios',
+          'ipa',
           '--release',
           '--no-codesign',
           if (dartDefines != null) ...dartDefines,
