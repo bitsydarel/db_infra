@@ -315,13 +315,36 @@ class FlutterIosBuildExecutor extends BuildExecutor {
   }
 
   void _buildIpa() {
+    final Directory xcArchiveFileFromFlutterBuild = Directory(path.joinAll([
+      projectDirectory.path,
+      'build',
+      'ios',
+      'archive',
+      'Runner.xcarchive',
+    ]));
+
+    final Directory xcArchiveFileFromIosBuild = Directory(path.joinAll([
+      projectDirectory.path,
+      'ios',
+      'build',
+      'Runner.xcarchive',
+    ]));
+
     final ShellOutput exportArchive = runner.execute(
       'xcodebuild',
       <String>[
         '-verbose',
         '-exportArchive',
         '-archivePath',
-        '../build/ios/archive/Runner.xcarchive',
+        if (xcArchiveFileFromFlutterBuild.existsSync())
+          xcArchiveFileFromFlutterBuild.path
+        else if (xcArchiveFileFromIosBuild.existsSync())
+          xcArchiveFileFromIosBuild.path
+        else
+          throw UnrecoverableException(
+            'Could not find the Runner.xcarchive file after flutter build',
+            ExitCode.tempFail.code,
+          ),
         '-allowProvisioningUpdates',
         '-allowProvisioningDeviceRegistration',
         '-authenticationKeyPath',
