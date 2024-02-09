@@ -324,11 +324,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       'build/Runner.xcarchive',
     );
 
-    print(runner.execute('ls', ['-R', '../build/ios']).stdout);
-
-    print(xcArchiveFileFromFlutterBuild.path);
-    print(xcArchiveFileFromIosBuild.path);
-
     final ShellOutput exportArchive = runner.execute(
       'xcodebuild',
       <String>[
@@ -374,11 +369,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
     BDLogger().info(
       'XCODE BUILD OUTPUT:\n${exportArchive.stderr}\n${exportArchive.stdout}',
-    );
-
-    BDLogger().info(
-      'Created Signing config for '
-      '${configuration.iosProvisionProfileType.exportMethod} (by creating ipa)',
     );
   }
 }

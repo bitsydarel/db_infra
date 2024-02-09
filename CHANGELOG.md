@@ -19,3 +19,7 @@
 
 - Add possibility to auto-create a certificate if there's no valid one when doing project setup.
 - Fix bug were auto-select the first certificate of the profile and the profile has many certificates.
+
+## 0.2.0
+
+- Improve support of automatic signing for iOS apps.
