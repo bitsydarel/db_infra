@@ -92,7 +92,7 @@ void updateIosProjectSigningConfiguration(
 ) {
   final String filename = path.basename(codeSigningConfig.path);
 
-  final String importStatement = '#include? "$filename"';
+  final String importStatement = '#include "$filename"';
 
   final List<String> releaseConfigLines = releaseConfig.readAsLinesSync();
 

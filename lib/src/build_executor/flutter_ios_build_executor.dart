@@ -197,7 +197,9 @@ class FlutterIosBuildExecutor extends BuildExecutor {
           'build',
           'ipa',
           '--release',
-          '--no-codesign',
+          '--verbose',
+          '--export-options-plist',
+          configuration.iosExportOptionsPlist.path,
           if (dartDefines != null) ...dartDefines,
         ],
         <String, String>{'CI': 'true'},
@@ -215,12 +217,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       }
 
       print(output.stdout);
-
-      Directory.current = path.join(projectDir, 'ios');
-
-      _buildIpa();
-
-      Directory.current = projectDir;
     } else {
       final ShellOutput output = runner.execute(
         'flutter',
@@ -313,62 +309,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     BDLogger().info(
       'No valid certificates found signed with the specified private key '
       'and of type $certificateType',
-    );
-  }
-
-  void _buildIpa() {
-    final Directory xcArchiveFileFromFlutterBuild =
-        Directory('../build/ios/archive/Runner.xcarchive');
-
-    final Directory xcArchiveFileFromIosBuild = Directory(
-      'build/Runner.xcarchive',
-    );
-
-    final ShellOutput exportArchive = runner.execute(
-      'xcodebuild',
-      <String>[
-        '-verbose',
-        '-exportArchive',
-        '-archivePath',
-        if (xcArchiveFileFromFlutterBuild.existsSync())
-          xcArchiveFileFromFlutterBuild.path
-        else if (xcArchiveFileFromIosBuild.existsSync())
-          xcArchiveFileFromIosBuild.path
-        else
-          throw UnrecoverableException(
-            'Could not find the Runner.xcarchive file after flutter build',
-            ExitCode.tempFail.code,
-          ),
-        '-allowProvisioningUpdates',
-        '-allowProvisioningDeviceRegistration',
-        '-authenticationKeyPath',
-        configuration.iosAppStoreConnectKey.path,
-        '-authenticationKeyID',
-        configuration.iosAppStoreConnectKeyId,
-        '-authenticationKeyIssuerID',
-        configuration.iosAppStoreConnectKeyIssuer,
-        '-exportOptionsPlist',
-        configuration.iosExportOptionsPlist.path,
-        '-exportPath',
-        path.join(projectDirectory.path, 'build/ios/ipa'),
-      ],
-    );
-
-    if (!exportArchive.stdout.contains('EXPORT SUCCEEDED')) {
-      final UnrecoverableException exception = UnrecoverableException(
-        exportArchive.stderr,
-        ExitCode.tempFail.code,
-      );
-
-      BDLogger()
-        ..info(exportArchive.stdout)
-        ..error(exportArchive.stderr, exception);
-
-      throw exception;
-    }
-
-    BDLogger().info(
-      'XCODE BUILD OUTPUT:\n${exportArchive.stderr}\n${exportArchive.stdout}',
     );
   }
 }

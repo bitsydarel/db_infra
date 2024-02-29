@@ -1,13 +1,11 @@
-## 0.0.1
+## 0.2.0
 
-- Initial version.
-- Build and sign ios application.
-- Disk infrastructure manager.
+- Improve support of automatic signing for iOS apps.
 
-## 0.0.2
+## 0.1.1
 
-- Added support for dotEnv file.
-- Error description and logging improvement.
+- Add possibility to auto-create a certificate if there's no valid one when doing project setup.
+- Fix bug were auto-select the first certificate of the profile and the profile has many certificates.
 
 ## 0.1.0
 
@@ -15,11 +13,13 @@
 - Upgrade dependencies
 - Add new extension: `FileExtensions` to zip/unzip files
 
-## 0.1.1
+## 0.0.2
 
-- Add possibility to auto-create a certificate if there's no valid one when doing project setup.
-- Fix bug were auto-select the first certificate of the profile and the profile has many certificates.
+- Added support for dotEnv file.
+- Error description and logging improvement.
 
-## 0.2.0
+## 0.0.1
 
-- Improve support of automatic signing for iOS apps.
+- Initial version.
+- Build and sign ios application.
+- Disk infrastructure manager.

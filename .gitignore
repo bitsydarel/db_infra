@@ -5,3 +5,8 @@
 # Conventional directory for build output.
 build/
 keys/
+/outputs/
+**.pem
+**.p12
+**.cer
+**.p8
