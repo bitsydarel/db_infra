@@ -41,31 +41,48 @@ File createCodeSigningXCConfig({
 
   final StringBuffer newConfig = StringBuffer();
 
-  if (certificate != null) {
-    newConfig.writeln('$codeSignIdentityKey=${certificate.name}');
+  if (developerTeamId != null) {
+    newConfig.writeln('$iosDeveloperTeamIdKey=$developerTeamId');
   }
 
   switch (signingType) {
     case IosBuildSigningType.automatic:
+      final String codeSigningIdentity =
+          provisionProfileType == ProvisionProfileType.iosAppStore
+              ? 'Apple Distribution'
+              : 'Apple Development';
+
+      newConfig.writeln('$codeSignIdentityKey="$codeSigningIdentity"');
+
       newConfig.writeln('$codeSignStyleKey=Automatic');
+
+      if (provisionProfile == null) {
+        newConfig
+          ..writeln('$provisionStyleKey=Automatic')
+          ..writeln('$provisioningProfileSpecifierKey=""');
+      } else {
+        newConfig
+          ..writeln('$provisionStyleKey=Manual')
+          ..writeln('$provisionProfileKey=${provisionProfile.uuid}')
+          ..writeln(
+            '$provisioningProfileSpecifierKey=${provisionProfile.name}',
+          );
+      }
       break;
     case IosBuildSigningType.manual:
+      if (certificate != null) {
+        newConfig.writeln('$codeSignIdentityKey=${certificate.name}');
+      }
       newConfig.writeln('$codeSignStyleKey=Manual');
+      newConfig.writeln('$provisionStyleKey=Manual');
+
+      if (provisionProfile != null) {
+        newConfig
+          ..writeln('$provisionProfileKey=${provisionProfile.uuid}')
+          ..writeln(
+              '$provisioningProfileSpecifierKey=${provisionProfile.name}');
+      }
       break;
-  }
-
-  if (provisionProfile != null) {
-    newConfig
-      ..writeln('$provisionProfileKey=${provisionProfile.uuid}')
-      ..writeln('$provisioningProfileSpecifierKey=${provisionProfile.name}');
-  }
-
-  if (developerTeamId != null) {
-    newConfig.writeln('$iosDeveloperTeamIdKey=$developerTeamId');
-
-    if (provisionProfile == null) {
-      newConfig.writeln('$provisionStyleKey=Automatic');
-    }
   }
 
   if (envs != null) {
