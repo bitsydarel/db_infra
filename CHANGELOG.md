@@ -1,3 +1,9 @@
+## 0.2.1
+
+- Added few workarounds to flutter tools issues
+- https://github.com/flutter/flutter/issues/106612
+- https://github.com/flutter/flutter/issues/113977
+
 ## 0.2.0
 
 - Improve support of automatic signing for iOS apps.

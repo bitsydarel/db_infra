@@ -202,7 +202,14 @@ class FlutterIosBuildExecutor extends BuildExecutor {
           configuration.iosExportOptionsPlist.path,
           if (dartDefines != null) ...dartDefines,
         ],
-        <String, String>{'CI': 'true'},
+        <String, String>{
+          'CI': 'true',
+          'FLUTTER_XCODE_CODE_SIGN_STYLE': 'Automatic',
+          'FLUTTER_XCODE_DEVELOPMENT_TEAM':
+              configuration.iosDeveloperTeamId.toString(),
+          'FLUTTER_XCODE_PROVISIONING_PROFILE_SPECIFIER': '',
+          'FLUTTER_XCODE_ProvisioningStyle': 'Automatic',
+        },
       );
 
       if (output.stderr.isNotEmpty) {

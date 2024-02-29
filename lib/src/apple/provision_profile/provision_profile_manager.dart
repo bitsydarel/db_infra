@@ -93,7 +93,6 @@ class ProvisionProfileManager {
         .toList();
 
     BDLogger().info(
-
       '\n${profileCertificates.join('\n')}',
     );
   }
@@ -199,6 +198,13 @@ class ProvisionProfileManager {
         ..writeln('<string>$developerTeamId</string>');
     }
 
+    if (signingType == IosBuildSigningType.automatic) {
+      builder
+        ..writeln('<key>signingCertificate</key>')
+        ..writeln(
+          '<string>${provisionProfileType == ProvisionProfileType.iosAppStore ? 'Apple Distribution' : 'Apple Development'}</string>',
+        );
+    }
     builder
       ..writeln('<key>signingStyle</key>')
       ..writeln('<string>${signingType.name}</string>')
