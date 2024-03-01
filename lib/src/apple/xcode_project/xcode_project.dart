@@ -26,23 +26,17 @@ const String provisioningProfileSpecifierKey = 'PROVISIONING_PROFILE_SPECIFIER';
 const String iosDeveloperTeamIdKey = 'DEVELOPMENT_TEAM';
 
 ///
-File createCodeSigningXCConfig({
-  required Directory parentDirectory,
+Map<String, String> createCodeSigningArguments({
   required IosBuildSigningType signingType,
   required ProvisionProfileType provisionProfileType,
   Certificate? certificate,
   ProvisionProfile? provisionProfile,
   String? developerTeamId,
-  Map<String, Object>? envs,
 }) {
-  final File xcConfigFile = File(
-    path.join(parentDirectory.path, 'Infra.xcconfig'),
-  );
-
-  final StringBuffer newConfig = StringBuffer();
+  final Map<String, String> args = <String, String>{};
 
   if (developerTeamId != null) {
-    newConfig.writeln('$iosDeveloperTeamIdKey=$developerTeamId');
+    args[iosDeveloperTeamIdKey] = developerTeamId;
   }
 
   switch (signingType) {
@@ -52,38 +46,49 @@ File createCodeSigningXCConfig({
               ? 'Apple Distribution'
               : 'Apple Development';
 
-      newConfig.writeln('$codeSignIdentityKey="$codeSigningIdentity"');
-
-      newConfig.writeln('$codeSignStyleKey=Automatic');
+      args[codeSignIdentityKey] = '"$codeSigningIdentity"';
+      args[codeSignStyleKey] = 'Automatic';
 
       if (provisionProfile == null) {
-        newConfig
-          ..writeln('$provisionStyleKey=Automatic')
-          ..writeln('$provisioningProfileSpecifierKey=""');
+        args[provisionStyleKey] = 'Automatic';
       } else {
-        newConfig
-          ..writeln('$provisionStyleKey=Manual')
-          ..writeln('$provisionProfileKey=${provisionProfile.uuid}')
-          ..writeln(
-            '$provisioningProfileSpecifierKey=${provisionProfile.name}',
-          );
+        args[provisionStyleKey] = 'Manual';
+        args[provisionProfileKey] = provisionProfile.uuid;
+        args[provisioningProfileSpecifierKey] = provisionProfile.name;
       }
       break;
     case IosBuildSigningType.manual:
       if (certificate != null) {
-        newConfig.writeln('$codeSignIdentityKey=${certificate.name}');
+        args[codeSignIdentityKey] = certificate.name;
       }
-      newConfig.writeln('$codeSignStyleKey=Manual');
-      newConfig.writeln('$provisionStyleKey=Manual');
+      args[codeSignStyleKey] = 'Manual';
+      args[provisionStyleKey] = 'Manual';
 
       if (provisionProfile != null) {
-        newConfig
-          ..writeln('$provisionProfileKey=${provisionProfile.uuid}')
-          ..writeln(
-              '$provisioningProfileSpecifierKey=${provisionProfile.name}');
+        args[provisionProfileKey] = provisionProfile.uuid;
+        args[provisioningProfileSpecifierKey] = provisionProfile.name;
       }
       break;
   }
+
+  return args;
+}
+
+///
+File createCodeSigningXCConfig({
+  required Directory parentDirectory,
+  required Map<String, String> codeSigningArguments,
+  Map<String, Object>? envs,
+}) {
+  final File xcConfigFile = File(
+    path.join(parentDirectory.path, 'Infra.xcconfig'),
+  );
+
+  final StringBuffer newConfig = StringBuffer();
+
+  codeSigningArguments.entries.forEach((MapEntry<String, String> entry) {
+    newConfig.writeln('${entry.key}=${entry.value}');
+  });
 
   if (envs != null) {
     envs.entries.forEach((MapEntry<String, Object> entry) {

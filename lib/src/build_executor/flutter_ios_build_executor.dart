@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:bdlogging/bdlogging.dart';
+import 'package:collection/collection.dart';
 import 'package:db_infra/src/apple/bundle_id/bundle_id_manager.dart';
 import 'package:db_infra/src/apple/certificates/certificate.dart';
 import 'package:db_infra/src/apple/certificates/certificate_type.dart';
@@ -138,14 +139,21 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     final Map<String, Object>? environmentVariables =
         await environmentVariableHandler?.call();
 
-    final File codeSigningConfig = createCodeSigningXCConfig(
+    final Map<String, String> codeSigningArguments = createCodeSigningArguments(
       certificate: certificate,
-      envs: environmentVariables,
-      parentDirectory: iosFlutterDir,
       developerTeamId: developerTeamId,
       provisionProfile: provisionProfile,
       signingType: configuration.iosSigningType,
       provisionProfileType: configuration.iosProvisionProfileType,
+    );
+
+    BDLogger()
+        .info('Code Signing Setting:\n${codeSigningArguments.toString()}');
+
+    final File codeSigningConfig = createCodeSigningXCConfig(
+      envs: environmentVariables,
+      parentDirectory: iosFlutterDir,
+      codeSigningArguments: codeSigningArguments,
     );
 
     BDLogger().info('Infra.xconfig\n${codeSigningConfig.readAsStringSync()}');
@@ -191,6 +199,16 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
       Directory.current = projectDir;
 
+      final Map<String, String> flutterCodeSigning =
+          Map<String, String>.fromEntries(
+        codeSigningArguments.entries.whereNot((MapEntry<String, String> entry) {
+          return entry.key.startsWith(codeSignIdentityKey);
+        }),
+      );
+
+      BDLogger()
+          .info('Flutter Signing Setting:\n${flutterCodeSigning.toString()}');
+
       final ShellOutput output = runner.execute(
         'flutter',
         <String>[
@@ -198,17 +216,17 @@ class FlutterIosBuildExecutor extends BuildExecutor {
           'ipa',
           '--release',
           '--verbose',
-          '--export-options-plist',
-          configuration.iosExportOptionsPlist.path,
+          '--no-codesign',
           if (dartDefines != null) ...dartDefines,
         ],
         <String, String>{
           'CI': 'true',
-          'FLUTTER_XCODE_CODE_SIGN_STYLE': 'Automatic',
-          'FLUTTER_XCODE_DEVELOPMENT_TEAM':
-              configuration.iosDeveloperTeamId.toString(),
-          'FLUTTER_XCODE_PROVISIONING_PROFILE_SPECIFIER': '',
-          'FLUTTER_XCODE_ProvisioningStyle': 'Automatic',
+          ...flutterCodeSigning.map<String, String>(
+            (String key, String value) => MapEntry<String, String>(
+              'FLUTTER_XCODE_$key',
+              value,
+            ),
+          ),
         },
       );
 
@@ -224,6 +242,12 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       }
 
       print(output.stdout);
+
+      Directory.current = path.join(projectDir, 'ios');
+
+      _buildIpa(flutterCodeSigning);
+
+      Directory.current = projectDir;
     } else {
       final ShellOutput output = runner.execute(
         'flutter',
@@ -316,6 +340,104 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     BDLogger().info(
       'No valid certificates found signed with the specified private key '
       'and of type $certificateType',
+    );
+  }
+
+  void _buildIpa(Map<String, String> flutterCodeSigning) {
+    final Directory xcArchiveFileFromFlutterBuild =
+        Directory('../build/ios/archive/Runner.xcarchive');
+
+    final Directory xcArchiveFileFromIosBuild = Directory(
+      'build/Runner.xcarchive',
+    );
+
+    final List<String> xcodeArguments = <String>[
+      '-verbose',
+      '-allowProvisioningUpdates',
+      '-allowProvisioningDeviceRegistration',
+      '-authenticationKeyPath',
+      configuration.iosAppStoreConnectKey.path,
+      '-authenticationKeyID',
+      configuration.iosAppStoreConnectKeyId,
+      '-authenticationKeyIssuerID',
+      configuration.iosAppStoreConnectKeyIssuer,
+      '-archivePath',
+      if (xcArchiveFileFromFlutterBuild.existsSync())
+        xcArchiveFileFromFlutterBuild.path
+      else if (xcArchiveFileFromIosBuild.existsSync())
+        xcArchiveFileFromIosBuild.path
+      else
+        throw UnrecoverableException(
+          'Could not find the Runner.xcarchive file after flutter build',
+          ExitCode.tempFail.code,
+        ),
+      ...flutterCodeSigning.entries.map((MapEntry<String, String> entry) {
+        return '${entry.key}=${entry.value}';
+      }).toList(),
+    ];
+
+    final ShellOutput buildArchive = runner.execute(
+      'xcodebuild',
+      <String>[
+        '-workspace',
+        'Runner.xcworkspace',
+        '-scheme',
+        'Runner',
+        '-configuration',
+        'Release',
+        '-sdk',
+        'iphoneos',
+        '-destination',
+        'generic/platform=iOS',
+        ...xcodeArguments,
+        'archive',
+      ],
+    );
+
+    if (!buildArchive.stdout.contains('ARCHIVE SUCCEEDED')) {
+      final UnrecoverableException exception = UnrecoverableException(
+        buildArchive.stderr,
+        ExitCode.tempFail.code,
+      );
+
+      BDLogger()
+        ..info(buildArchive.stdout)
+        ..error(buildArchive.stderr, exception);
+
+      throw exception;
+    }
+
+    BDLogger().info(
+      'XCODE ARCHIVE OUTPUT:\n${buildArchive.stderr}\n${buildArchive.stdout}',
+    );
+
+    final ShellOutput exportArchive = runner.execute(
+      'xcodebuild',
+      <String>[
+        ...xcodeArguments,
+        '-exportArchive',
+        '-exportOptionsPlist',
+        configuration.iosExportOptionsPlist.path,
+        '-exportPath',
+        path.join(projectDirectory.path, 'build/ios/ipa'),
+      ],
+    );
+
+    if (!exportArchive.stdout.contains('EXPORT SUCCEEDED')) {
+      final UnrecoverableException exception = UnrecoverableException(
+        exportArchive.stderr,
+        ExitCode.tempFail.code,
+      );
+
+      BDLogger()
+        ..info(exportArchive.stdout)
+        ..error(exportArchive.stderr, exception);
+
+      throw exception;
+    }
+
+    BDLogger().info(
+      'XCODE EXPORT OUTPUT:\n${exportArchive.stderr}\n${exportArchive.stdout}',
     );
   }
 }
