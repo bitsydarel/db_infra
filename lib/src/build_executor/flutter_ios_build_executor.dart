@@ -215,7 +215,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
           'build',
           'ipa',
           '--release',
-          '--verbose',
           '--no-codesign',
           if (dartDefines != null) ...dartDefines,
         ],
@@ -352,7 +351,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     );
 
     final List<String> xcodeArguments = <String>[
-      '-verbose',
       '-allowProvisioningUpdates',
       '-allowProvisioningDeviceRegistration',
       '-authenticationKeyPath',
