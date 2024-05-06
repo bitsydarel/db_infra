@@ -281,8 +281,8 @@ class IosSetupExecutor extends SetupExecutor {
             ? CertificateType.development
             : CertificateType.distribution;
 
-    final Certificate? certificateSignedByKey =
-        await certificatesManager.findCertificateSignedByKey(csr.privateKey);
+    final Certificate? certificateSignedByKey = await certificatesManager
+        .findCertificateSignedByKey(csr.privateKey, certificateType);
 
     final Certificate certificate;
 

@@ -101,6 +101,8 @@ class CertificatesManager {
     _keychainsManager
       ..importIntoAppKeychain(certificateFile)
       ..updateAppKeychainPartitionList();
+
+    BDLogger().info('Imported certificate key file: ${certificateFile.path}');
   }
 
   ///
@@ -147,15 +149,20 @@ class CertificatesManager {
   }
 
   ///
-  Future<Certificate?> findCertificateSignedByKey(File privateKey) async {
+  Future<Certificate?> findCertificateSignedByKey(
+    File privateKey,
+    CertificateType certificateType,
+  ) async {
     final List<Certificate> certificates = await _api.getAll();
 
     for (final Certificate certificate in certificates) {
-      final bool isSignedByKey =
-          await isSignedWithPrivateKey(certificate, privateKey);
+      if (certificate.type == certificateType) {
+        final bool isSignedByKey =
+            await isSignedWithPrivateKey(certificate, privateKey);
 
-      if (isSignedByKey) {
-        return certificate;
+        if (isSignedByKey && !certificate.hasExpired()) {
+          return certificate;
+        }
       }
     }
     return null;

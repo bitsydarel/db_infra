@@ -1,3 +1,8 @@
+## 0.3.0
+
+- Added workarounds Cloud signing permission error when no development certificate found.
+- Updated the bdlogging package to v1.0.0
+
 ## 0.2.1
 
 - Added few workarounds to flutter tools issues

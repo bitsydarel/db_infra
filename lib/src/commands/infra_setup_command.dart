@@ -214,7 +214,7 @@ class InfraSetupCommand extends BaseCommand {
     BDLogger().addHandler(
       ConsoleLogHandler(
         supportedLevels: globalArgs.isVerbosityEnabled()
-            ? BDLevel.levels
+            ? BDLevel.values
             : <BDLevel>[BDLevel.warning, BDLevel.error],
       ),
     );
