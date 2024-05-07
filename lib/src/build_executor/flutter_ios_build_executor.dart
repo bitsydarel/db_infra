@@ -256,7 +256,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         throw exception;
       }
 
-      Zone.current.print(output.stdout);
+      BDLogger().info(output.stdout);
 
       Directory.current = path.join(projectDir, 'ios');
 
@@ -370,14 +370,15 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     final bool hasDevelopmentCertificate = importedCertificates
         .any((Certificate certificate) => certificate.isDevelopment());
 
+    CertificateSigningRequest? csr;
+
     if (!hasDevelopmentCertificate) {
       BDLogger().warning(
         'No valid certificates found signed with the specified private key ',
       );
       BDLogger().info('Creating development certificate for $appId...');
 
-      final CertificateSigningRequest csr =
-          certificatesManager.createCertificateSigningRequest(
+      csr = certificatesManager.createCertificateSigningRequest(
         appId: appId,
         privateKey: privateKeyFile,
         publicKey: publicKeyFile,
@@ -392,6 +393,47 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
         final Certificate certificate = await certificatesManager
             .createCertificate(csrFile, CertificateType.development);
+
+        final String? certificateSha1 =
+            certificatesManager.importCertificateLocally(certificate);
+
+        BDLogger().info(
+          '${certificate.name} imported in keychain with sha1 $certificateSha1',
+        );
+      } else {
+        BDLogger().warning(
+          'Could not create Certificate Signing Request, '
+          'will let the xcode Gods handle it',
+        );
+      }
+    }
+
+    final bool hasTargetCertificateType = importedCertificates
+        .any((Certificate certificate) => certificate.type == certificateType);
+
+    if (!hasTargetCertificateType &&
+        certificateType != CertificateType.development) {
+      BDLogger().warning(
+        'No valid certificates found signed with the specified private key '
+        'and of type $certificateType',
+      );
+      BDLogger().info('Creating $certificateType certificate for $appId...');
+
+      csr ??= certificatesManager.createCertificateSigningRequest(
+        appId: appId,
+        privateKey: privateKeyFile,
+        publicKey: publicKeyFile,
+      );
+
+      final File? csrFile = csr.request;
+
+      if (csrFile != null) {
+        BDLogger()
+            .info('Certificate Signing Request created at ${csrFile.path}');
+        BDLogger().info('Creating $certificateType certificate for $appId...');
+
+        final Certificate certificate = await certificatesManager
+            .createCertificate(csrFile, certificateType);
 
         final String? certificateSha1 =
             certificatesManager.importCertificateLocally(certificate);

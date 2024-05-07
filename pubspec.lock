@@ -61,10 +61,10 @@ packages:
     dependency: "direct main"
     description:
       name: bdlogging
-      sha256: "8683a57dd47fcc0a6fdd54a8668f6766720bef632d6a2f30e6d89de56fbd1b31"
+      sha256: "993fc99c19ef4d76004ae061c6149669156855501f50d8e64e4dbfa0b7f37be4"
       url: "https://pub.dev"
     source: hosted
-    version: "1.0.0"
+    version: "1.1.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -589,10 +589,10 @@ packages:
     dependency: "direct dev"
     description:
       name: test
-      sha256: d72b538180efcf8413cd2e4e6fcc7ae99c7712e0909eb9223f9da6e6d0ef715f
+      sha256: d11b55850c68c1f6c0cf00eabded4e66c4043feaf6c0d7ce4a36785137df6331
       url: "https://pub.dev"
     source: hosted
-    version: "1.25.4"
+    version: "1.25.5"
   test_api:
     dependency: transitive
     description:
