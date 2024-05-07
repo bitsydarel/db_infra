@@ -1,3 +1,13 @@
+## 0.4.0
+
+- Added support for multiple storage types: Disk, FTP, and Google Cloud.
+- Introduced `StorageType` enum and factory extensions for creating storage instances.
+- Enhanced error handling for missing or invalid configuration parameters.
+- Improved build command functionality with support for environment variable handlers.
+- Updated dependencies to ensure compatibility with Dart SDK >=3.6.0.
+- Added examples for environment variable usage in Flutter applications.
+- Refactored `InfraBuildCommand` to streamline build and distribution processes.
+
 ## 0.3.0
 
 - Added workarounds Cloud signing permission error when no development certificate found.

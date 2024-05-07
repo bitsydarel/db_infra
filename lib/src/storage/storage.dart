@@ -63,9 +63,7 @@ extension StorageByTypeFactoryExtension on StorageType {
         return FtpStorage.fromJson(json, infraDirectory);
       case StorageType.googleCloud:
         return GoogleCloudStorage.fromJson(json, infraDirectory);
-      default:
-        throw UnsupportedError('$name is not supported');
-    }
+      }
   }
 
   ///
@@ -138,8 +136,6 @@ extension StorageByTypeFactoryExtension on StorageType {
           '$infraGcloudProjectServiceAccountFileArg need to be specified',
           ExitCode.config.code,
         );
-      default:
-        throw UnsupportedError('Infra storage type $name is not supported');
-    }
+      }
   }
 }

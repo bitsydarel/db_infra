@@ -59,6 +59,10 @@ class InfraBuildCommand extends BaseCommand {
     final ArgResults globalArgs = globalResults!;
     final ArgResults commandArgs = argResults!;
 
+    BDLogger().onError.listen((BDLogError error) {
+      stderr.writeln('Error: ${error.exception}\n${error.stackTrace}');
+    });
+
     BDLogger().addHandler(
       ConsoleLogHandler(
         supportedLevels: globalArgs.isVerbosityEnabled()
@@ -228,8 +232,6 @@ class InfraBuildCommand extends BaseCommand {
         return type.asEnvironmentVariableHandler(
           dotEnvironmentVariableFile: dotFile,
         );
-      default:
-        throw UnimplementedError();
-    }
+      }
   }
 }
