@@ -1,3 +1,7 @@
+## 0.4.1
+
+- Reverted path library version from minimum of 1.9.1 to =1.9.0 to support flutter 3.27.+ versions.
+
 ## 0.4.0
 
 - Added support for multiple storage types: Disk, FTP, and Google Cloud.
