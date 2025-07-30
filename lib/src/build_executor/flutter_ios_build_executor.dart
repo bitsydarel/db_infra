@@ -245,10 +245,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         },
       );
 
-      stdout
-        ..writeln(output.stdout)
-        ..writeln(output.stderr);
-
       if (output.stderr.isNotEmpty) {
         final UnrecoverableException exception =
             UnrecoverableException(output.stderr, ExitCode.tempFail.code);
