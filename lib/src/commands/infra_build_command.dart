@@ -59,17 +59,23 @@ class InfraBuildCommand extends BaseCommand {
     final ArgResults globalArgs = globalResults!;
     final ArgResults commandArgs = argResults!;
 
+    BDLogger().addHandler(
+      ConsoleLogHandler(
+        printer: stdout.writeln,
+        supportedLevels: globalArgs.isVerbosityEnabled()
+            ? BDLevel.values
+            : <BDLevel>[
+                BDLevel.info,
+                BDLevel.success,
+                BDLevel.warning,
+                BDLevel.error
+              ],
+      ),
+    );
+
     BDLogger().onError.listen((BDLogError error) {
       stderr.writeln('Error: ${error.exception}\n${error.stackTrace}');
     });
-
-    BDLogger().addHandler(
-      ConsoleLogHandler(
-        supportedLevels: globalArgs.isVerbosityEnabled()
-            ? BDLevel.values
-            : <BDLevel>[BDLevel.warning, BDLevel.error],
-      ),
-    );
 
     final File configurationFile =
         globalArgs.getConfigurationFile(checkIfExist: true);
@@ -232,6 +238,6 @@ class InfraBuildCommand extends BaseCommand {
         return type.asEnvironmentVariableHandler(
           dotEnvironmentVariableFile: dotFile,
         );
-      }
+    }
   }
 }
