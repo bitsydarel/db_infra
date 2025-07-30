@@ -231,7 +231,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
           'build',
           'ipa',
           '--release',
-          '--verbose',
           '--no-codesign',
           if (dartDefines != null) ...dartDefines,
         ],
@@ -246,12 +245,13 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         },
       );
 
+      stdout
+        ..writeln(output.stdout)
+        ..writeln(output.stderr);
+
       if (output.stderr.isNotEmpty) {
         final UnrecoverableException exception =
             UnrecoverableException(output.stderr, ExitCode.tempFail.code);
-
-        print(output.stdout);
-        print(output.stderr);
 
         BDLogger()
           ..info(output.stdout)
