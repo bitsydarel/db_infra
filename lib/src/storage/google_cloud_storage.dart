@@ -132,15 +132,15 @@ class GoogleCloudStorage extends Storage {
           FileSystemEntity.typeSync(file.path);
 
       if (fileType == FileSystemEntityType.directory) {
-        encoder.addDirectory(Directory(file.path));
+        await encoder.addDirectory(Directory(file.path));
       } else if (fileType == FileSystemEntityType.file) {
-        encoder.addFile(file);
+        encoder.addFileSync(file);
       }
     }
 
     encoder.close();
 
-    if (!zipFile.existsSync() && zipFile.lengthSync() <= 0) {
+    if (!zipFile.existsSync() || zipFile.lengthSync() <= 0) {
       throw UnrecoverableException(
         'Could not create file to upload to Gcloud bucket ${zipFile.path}',
         ExitCode.osFile.code,

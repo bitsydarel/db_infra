@@ -1,3 +1,8 @@
+## 0.5.0
+
+- Fixed bug with creating of zip file to be uploaded to Google Cloud Storage.
+- Updated dependencies to ensure compatibility with Dart SDK >=3.7.0.
+
 ## 0.4.1
 
 - Reverted path library version from minimum of 1.9.1 to =1.9.0 to support flutter 3.27.+ versions.

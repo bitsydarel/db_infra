@@ -269,10 +269,10 @@ packages:
     dependency: "direct main"
     description:
       name: gcloud
-      sha256: c63576bbd60b7dccd1548d51286e1c5b82e26b62440372a09c2aad0785d2e9f4
+      sha256: caa415a0145ec8afac457322872c3e8b38379a88800d2944c53798ea8fbce386
       url: "https://pub.dev"
     source: hosted
-    version: "0.8.18"
+    version: "0.8.19"
   glob:
     dependency: "direct main"
     description:
@@ -445,10 +445,10 @@ packages:
     dependency: transitive
     description:
       name: pointycastle
-      sha256: "7c1e5f0d23c9016c5bbd8b1473d0d3fb3fc851b876046039509e18e0c7485f2c"
+      sha256: "4be0097fcf3fd3e8449e53730c631200ebc7b88016acecab2b0da2f0149222fe"
       url: "https://pub.dev"
     source: hosted
-    version: "3.7.3"
+    version: "3.9.1"
   pool:
     dependency: transitive
     description:
