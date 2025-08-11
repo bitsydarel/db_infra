@@ -51,6 +51,10 @@ class InfraBuildCommand extends BaseCommand {
       ..addOption(
         infraBuildOutputDirectoryArg,
         help: 'Specify the output directory.',
+      )
+      ..addOption(
+        infraBuildFlavorNameArg,
+        help: 'Specify the infrastructure build flavor name',
       );
   }
 
@@ -92,6 +96,9 @@ class InfraBuildCommand extends BaseCommand {
       infraDirectory: infraDir,
       aesPassword: aesEncryptorPassword,
     );
+
+    final String? buildFlavor =
+        commandArgs.parseOptionalString(infraBuildFlavorNameArg);
 
     final List<BuildDistributorType> buildDistributorTypes =
         _getBuildDistributorTypes(commandArgs);
@@ -136,12 +143,13 @@ class InfraBuildCommand extends BaseCommand {
 
     try {
       iosFlutterOutput = await FlutterIosBuildExecutor(
+        buildFlavor: buildFlavor,
         projectDirectory: projectDir,
-        configuration: buildConfiguration,
-        provisionProfilesManager: profilesManager,
-        certificatesManager: certificatesManager,
         bundleIdManager: bundleIdManager,
+        configuration: buildConfiguration,
         environmentVariableHandler: envHandler,
+        certificatesManager: certificatesManager,
+        provisionProfilesManager: profilesManager,
       ).build();
     } on Object catch (_) {
       certificatesManager.cleanupLocally();
@@ -160,8 +168,9 @@ class InfraBuildCommand extends BaseCommand {
     );
 
     final File androidFlutterOutput = await FlutterAndroidBuildExecutor(
-      configuration: buildConfiguration,
+      buildFlavor: buildFlavor,
       projectDirectory: projectDir,
+      configuration: buildConfiguration,
       environmentVariableHandler: envHandler,
     ).build();
 

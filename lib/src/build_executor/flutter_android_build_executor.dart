@@ -16,9 +16,14 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
   FlutterAndroidBuildExecutor({
     required Directory projectDirectory,
     required InfraBuildConfiguration configuration,
+    String? buildFlavor,
     this.runner = const ShellRunner(),
     this.environmentVariableHandler,
-  }) : super(projectDirectory: projectDirectory, configuration: configuration);
+  }) : super(
+          buildFlavor: buildFlavor,
+          configuration: configuration,
+          projectDirectory: projectDirectory,
+        );
 
   ///
   final EnvironmentVariableHandler? environmentVariableHandler;

@@ -10,16 +10,20 @@ export 'flutter_ios_build_executor.dart';
 ///
 abstract class BuildExecutor {
   ///
-  @protected
-  final InfraBuildConfiguration configuration;
+  final String? buildFlavor;
 
   ///
   final Directory projectDirectory;
 
   ///
+  @protected
+  final InfraBuildConfiguration configuration;
+
+  ///
   const BuildExecutor({
-    required this.projectDirectory,
+    required this.buildFlavor,
     required this.configuration,
+    required this.projectDirectory,
   });
 
   ///

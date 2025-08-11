@@ -1,3 +1,7 @@
+## 0.5.1
+
+- Added support for build flavors in Flutter applications.
+
 ## 0.5.0
 
 - Fixed bug with creating of zip file to be uploaded to Google Cloud Storage.

@@ -141,6 +141,9 @@ const String infraBuildDotEnvVariableFileArg = 'build-dot-env-file';
 /// Infrastructure environment variable type.
 const String infraBuildEnvVariableTypeArg = 'build-env-type';
 
+/// Infrastructure build flavor name argument.
+const String infraBuildFlavorNameArg = 'build-flavor-name';
+
 /// Infrastructure configuration file.
 const String infraConfigFileArg = 'config-file';
 

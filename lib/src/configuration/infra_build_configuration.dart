@@ -10,39 +10,59 @@ import 'package:db_infra/src/utils/utils.dart';
 import 'package:io/io.dart';
 import 'package:path/path.dart' as path;
 
+/// Stores all configuration and output artifacts required for building
+/// and signing iOS and Android applications in the infrastructure.
 ///
+/// This configuration is typically generated after running the setup command
+/// and is used by build executors to perform platform-specific builds.
 class InfraBuildConfiguration extends Configuration {
-  ///
+  /// The iOS Certificate Signing Request (CSR) file, if provided.
+  /// Used for creating or referencing signing certificates.
   final File? iosCertificateSigningRequest;
 
-  ///
+  /// The private key file associated with the iOS CSR.
+  /// Required for manual code signing or certificate generation.
   final File? iosCertificateSigningRequestPrivateKey;
 
-  ///
+  /// The public key file associated with the iOS CSR.
+  /// Used for certificate validation and creation.
   final File? iosCertificateSigningRequestPublicKey;
 
-  ///
+  /// The name used in the iOS CSR, if a new CSR was generated.
+  /// Used for certificate creation.
   final String? iosCertificateSigningRequestName;
 
-  ///
+  /// The email used in the iOS CSR, if a new CSR was generated.
+  /// Used for certificate creation.
   final String? iosCertificateSigningRequestEmail;
 
-  ///
+  /// The name of the iOS Provisioning Profile used for code signing.
+  /// Required for manual signing.
   final String? iosProvisionProfileName;
 
-  ///
+  /// The ID of the iOS signing certificate used for code signing.
+  /// Required for manual signing.
   final String? iosCertificateId;
 
-  ///
+  /// The iOS Developer Team ID used for automatic signing.
+  /// If set, enables automatic code signing.
   final String? iosDeveloperTeamId;
 
-  ///
+  /// The iOS Export Options plist file used for configuring the export phase
+  /// of the Xcode build. Required for iOS IPA builds.
   final File iosExportOptionsPlist;
 
-  ///
+  /// The type of iOS signing used (manual or automatic).
+  /// Determines the signing flow during build.
   final IosBuildSigningType iosSigningType;
 
+  /// Creates an [InfraBuildConfiguration] instance
+  /// with the provided build and signing parameters.
   ///
+  /// All required fields must be specified to
+  /// fully describe the iOS and Android build configuration,
+  /// including app identifiers, signing credentials,
+  /// output types, and storage/encryptor settings.
   InfraBuildConfiguration({
     required String androidAppId,
     required String iosAppId,
@@ -89,7 +109,12 @@ class InfraBuildConfiguration extends Configuration {
           iosProvisionProfileType: iosProvisionProfileType,
         );
 
+  /// Creates an [InfraBuildConfiguration] instance from a JSON map.
   ///
+  /// Parses all required fields from [json] to reconstruct the
+  /// build configuration, including file paths, credentials, and build settings
+  ///
+  /// Throws [FormatException] if required fields are missing or invalid.
   static Future<InfraBuildConfiguration> fromJson({
     required final JsonMap json,
     required final Directory infraDir,
@@ -259,7 +284,25 @@ class InfraBuildConfiguration extends Configuration {
     );
   }
 
+  /// Converts the `InfraBuildConfiguration` instance into a JSON-compatible
+  /// `Map<String, dynamic>`. This method serializes all the properties of the
+  /// configuration into key-value pairs, making it suitable for storage or
+  /// transmission.
   ///
+  /// Returns:
+  /// - A `Map<String, dynamic>` containing the serialized representation of
+  ///   the `InfraBuildConfiguration` instance.
+  ///
+  /// Example:
+  /// ```dart
+  /// final config = InfraBuildConfiguration(
+  ///   androidAppId: 'com.example.app',
+  ///   iosAppId: 'com.example.ios',
+  ///   // other required properties...
+  /// );
+  /// final json = config.toJson();
+  /// print(json); // Outputs a map with all configuration properties.
+  /// ```
   Future<JsonMap> toJson() async {
     final JsonMap encryptedStorageProperties =
         await storage.toJson().asEncrypted(encryptor);

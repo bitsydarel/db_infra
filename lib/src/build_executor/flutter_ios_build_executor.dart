@@ -45,9 +45,14 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     required this.bundleIdManager,
     required Directory projectDirectory,
     required InfraBuildConfiguration configuration,
+    String? buildFlavor,
     this.runner = const ShellRunner(),
     this.environmentVariableHandler,
-  }) : super(projectDirectory: projectDirectory, configuration: configuration);
+  }) : super(
+          buildFlavor: buildFlavor,
+          configuration: configuration,
+          projectDirectory: projectDirectory,
+        );
 
   @override
   Future<File> build() async {
@@ -230,6 +235,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         <String>[
           'build',
           'ipa',
+          if (buildFlavor != null) '--flavor=$buildFlavor',
           '--release',
           '--no-codesign',
           if (dartDefines != null) ...dartDefines,
@@ -269,6 +275,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         <String>[
           'build',
           configuration.iosBuildOutputType.name,
+          if (buildFlavor != null) '--flavor=$buildFlavor',
           '--release',
           '--verbose',
           '--export-options-plist',
