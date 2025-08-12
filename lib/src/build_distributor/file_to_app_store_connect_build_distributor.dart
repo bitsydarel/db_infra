@@ -53,7 +53,7 @@ class FileToAppStoreConnectBuildDistributor extends BuildDistributor {
       ..createSync(recursive: true)
       ..writeAsBytesSync(configuration.iosAppStoreConnectKey.readAsBytesSync());
 
-    final ShellOutput commandOutput = runner.execute(
+    final ShellOutput commandOutput = await runner.executeAsync(
       'xcrun',
       <String>[
         'altool',

@@ -1,12 +1,53 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bdlogging/bdlogging.dart';
 import 'package:meta/meta.dart';
 
 ///
 class ShellRunner {
   ///
   const ShellRunner();
+
+  ///
+  Future<ShellOutput> executeAsync(
+    String command,
+    List<String> arguments, [
+    Map<String, String>? environment,
+  ]) async {
+    final StringBuffer stdoutBuffer = StringBuffer();
+    final StringBuffer stderrBuffer = StringBuffer();
+
+    try {
+      final Process process = await Process.start(
+        command,
+        arguments,
+        runInShell: true,
+        environment: environment,
+        mode: ProcessStartMode.detached,
+      );
+
+      final Future<void> stdoutFuture = process.stdout
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .forEach(stdoutBuffer.writeln);
+
+      final Future<void> stderrFuture = process.stderr
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .forEach(stderrBuffer.writeln);
+
+      await Future.wait(<Future<void>>[stdoutFuture, stderrFuture]);
+    } on Object catch (e) {
+      stderrBuffer.writeln('Error starting process: $e');
+      BDLogger().error('Error starting process: $e', e);
+    }
+
+    return ShellOutput(
+      stdout: stdoutBuffer.toString(),
+      stderr: stdoutBuffer.toString(),
+    );
+  }
 
   ///
   ShellOutput execute(

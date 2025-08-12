@@ -232,7 +232,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       BDLogger()
           .info('Flutter Signing Setting:\n${flutterCodeSigning.toString()}');
 
-      final ShellOutput output = runner.execute(
+      final ShellOutput output = await runner.executeAsync(
         'flutter',
         <String>[
           'build',
@@ -268,11 +268,11 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
       Directory.current = path.join(projectDir, 'ios');
 
-      _buildIpa(flutterCodeSigning, scheme: flutterFlavor);
+      await _buildIpa(flutterCodeSigning, scheme: flutterFlavor);
 
       Directory.current = projectDir;
     } else {
-      final ShellOutput output = runner.execute(
+      final ShellOutput output = await runner.executeAsync(
         'flutter',
         <String>[
           'build',
@@ -459,10 +459,10 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     }
   }
 
-  void _buildIpa(
+  Future<void> _buildIpa(
     Map<String, String> flutterCodeSigning, {
     String? scheme,
-  }) {
+  }) async {
     final Directory xcArchiveFileFromFlutterBuild =
         Directory('../build/ios/archive/Runner.xcarchive');
 
@@ -496,7 +496,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
     BDLogger().info('XCODE ARCHIVE STARTED');
 
-    final ShellOutput buildArchive = runner.execute(
+    final ShellOutput buildArchive = await runner.executeAsync(
       'xcodebuild',
       <String>[
         '-workspace',
@@ -532,7 +532,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
     BDLogger().info('XCODE EXPORT STARTED');
 
-    final ShellOutput exportArchive = runner.execute(
+    final ShellOutput exportArchive = await runner.executeAsync(
       'xcodebuild',
       <String>[
         ...xcodeArguments,

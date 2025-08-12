@@ -65,7 +65,7 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
 
     BDLogger().info('ANDROID FLUTTER BUILD STARTED');
 
-    final ShellOutput output = runner.execute(
+    final ShellOutput output = await runner.executeAsync(
       'flutter',
       <String>[
         'build',
