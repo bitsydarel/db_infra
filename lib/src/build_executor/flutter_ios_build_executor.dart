@@ -494,6 +494,8 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       }).toList(),
     ];
 
+    BDLogger().info('XCODE ARCHIVE STARTED');
+
     final ShellOutput buildArchive = runner.execute(
       'xcodebuild',
       <String>[
@@ -526,9 +528,9 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       throw exception;
     }
 
-    BDLogger().info(
-      'XCODE ARCHIVE OUTPUT:\n${buildArchive.stdout}',
-    );
+    BDLogger().info('XCODE ARCHIVE COMPLETED');
+
+    BDLogger().info('XCODE EXPORT STARTED');
 
     final ShellOutput exportArchive = runner.execute(
       'xcodebuild',
@@ -556,8 +558,6 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       throw exception;
     }
 
-    BDLogger().info(
-      'XCODE EXPORT OUTPUT:\n${exportArchive.stdout}',
-    );
+    BDLogger().info('XCODE EXPORT COMPLETED');
   }
 }

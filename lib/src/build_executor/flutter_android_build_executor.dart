@@ -61,6 +61,8 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
 
     Directory.current = projectDir;
 
+    BDLogger().info('ANDROID FLUTTER BUILD STARTED');
+
     final ShellOutput output = runner.execute(
       'flutter',
       <String>[
@@ -84,14 +86,14 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
       );
 
       BDLogger()
-        ..info('GRADLE BUILD FAILED')
+        ..info('ANDROID FLUTTER BUILD FAILED')
         ..info(output.stdout)
         ..error(output.stderr, exception);
 
       throw exception;
     }
 
-    BDLogger().info('GRADLE BUILD OUTPUT:\n${output.stdout}');
+    BDLogger().info('ANDROID FLUTTER BUILD COMPLETED\n${output.stdout}');
 
     final File? outputFile =
         configuration.androidBuildOutputType.outputFile(projectDirectory);
