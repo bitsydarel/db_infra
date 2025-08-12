@@ -196,6 +196,8 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
     Directory.current = projectDir;
 
+    final String? flutterFlavor = buildFlavor;
+
     // Check if automatic signing is enabled, if yes than build project
     // with xcodebuild to allow it to created the required signing config.
     if (developerTeamId != null &&
@@ -235,7 +237,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         <String>[
           'build',
           'ipa',
-          if (buildFlavor != null) '--flavor=$buildFlavor',
+          if (flutterFlavor != null) ...['--flavor', flutterFlavor],
           '--release',
           '--no-codesign',
           if (dartDefines != null) ...dartDefines,
@@ -266,7 +268,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
       Directory.current = path.join(projectDir, 'ios');
 
-      _buildIpa(flutterCodeSigning);
+      _buildIpa(flutterCodeSigning, scheme: flutterFlavor);
 
       Directory.current = projectDir;
     } else {
@@ -275,7 +277,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         <String>[
           'build',
           configuration.iosBuildOutputType.name,
-          if (buildFlavor != null) '--flavor=$buildFlavor',
+          if (flutterFlavor != null) ...['--flavor', flutterFlavor],
           '--release',
           '--verbose',
           '--export-options-plist',
@@ -457,7 +459,10 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     }
   }
 
-  void _buildIpa(Map<String, String> flutterCodeSigning) {
+  void _buildIpa(
+    Map<String, String> flutterCodeSigning, {
+    String? scheme,
+  }) {
     final Directory xcArchiveFileFromFlutterBuild =
         Directory('../build/ios/archive/Runner.xcarchive');
 
@@ -495,9 +500,9 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         '-workspace',
         'Runner.xcworkspace',
         '-scheme',
-        'Runner',
+        if (scheme != null) scheme else 'Runner',
         '-configuration',
-        'Release',
+        if (scheme != null) 'Release-$scheme' else 'Release',
         '-sdk',
         'iphoneos',
         '-destination',
