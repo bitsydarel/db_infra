@@ -39,13 +39,13 @@ class IosSetupExecutor extends SetupExecutor {
 
   ///
   const IosSetupExecutor({
-    required InfraSetupConfiguration configuration,
-    required Directory infraDirectory,
+    required this.runner,
+    required this.deviceManager,
+    required this.bundleIdManager,
     required this.profilesManager,
     required this.certificatesManager,
-    required this.bundleIdManager,
-    required this.deviceManager,
-    this.runner = const ShellRunner(),
+    required Directory infraDirectory,
+    required InfraSetupConfiguration configuration,
   }) : super(configuration, infraDirectory);
 
   @override

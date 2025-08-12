@@ -14,10 +14,10 @@ import 'package:path/path.dart' as path;
 class FlutterAndroidBuildExecutor extends BuildExecutor {
   ///
   FlutterAndroidBuildExecutor({
+    required this.runner,
     required Directory projectDirectory,
     required InfraBuildConfiguration configuration,
     String? buildFlavor,
-    this.runner = const ShellRunner(),
     this.environmentVariableHandler,
   }) : super(
           buildFlavor: buildFlavor,

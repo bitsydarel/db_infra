@@ -12,6 +12,7 @@ import 'package:db_infra/src/build_executor/flutter_android_build_executor.dart'
 import 'package:db_infra/src/commands/base_command.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/environment_variable_handler/environment_variable_handler.dart';
+import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/utils/utils.dart';
 
 ///
@@ -154,6 +155,7 @@ class InfraBuildCommand extends BaseCommand {
         environmentVariableHandler: envHandler,
         certificatesManager: certificatesManager,
         provisionProfilesManager: profilesManager,
+        runner: ShellRunner(workingDirectory: projectDir),
       ).build();
 
       await Future.forEach(
@@ -190,6 +192,7 @@ class InfraBuildCommand extends BaseCommand {
         projectDirectory: projectDir,
         configuration: buildConfiguration,
         environmentVariableHandler: envHandler,
+        runner: ShellRunner(workingDirectory: projectDir),
       ).build();
 
       await Future.forEach(

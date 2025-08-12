@@ -15,6 +15,7 @@ import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/encryptor/encryptor.dart';
 import 'package:db_infra/src/setup_executor/android_setup_executor.dart';
 import 'package:db_infra/src/setup_executor/setup_executor.dart';
+import 'package:db_infra/src/shell_runner.dart';
 import 'package:db_infra/src/storage/storage.dart';
 import 'package:db_infra/src/utils/utils.dart';
 import 'package:meta/meta.dart';
@@ -241,12 +242,13 @@ class InfraSetupCommand extends BaseCommand {
     final DeviceManager deviceManager = configuration.getDeviceManager();
 
     final IosSetupExecutor iosSetupExecutor = IosSetupExecutor(
-      configuration: configuration,
       infraDirectory: infraDir,
-      profilesManager: profilesManager,
-      certificatesManager: certificatesManager,
-      bundleIdManager: bundleIdManager,
       deviceManager: deviceManager,
+      configuration: configuration,
+      profilesManager: profilesManager,
+      bundleIdManager: bundleIdManager,
+      certificatesManager: certificatesManager,
+      runner: ShellRunner(workingDirectory: projectDir),
     );
 
     BDLogger().info(
@@ -263,8 +265,9 @@ class InfraSetupCommand extends BaseCommand {
     }
 
     final AndroidSetupExecutor androidSetupExecutor = AndroidSetupExecutor(
-      configuration: configuration,
       infraDirectory: infraDir,
+      configuration: configuration,
+      runner: ShellRunner(workingDirectory: projectDir),
     );
 
     BDLogger().info(

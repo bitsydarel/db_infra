@@ -11,10 +11,10 @@ import 'package:path/path.dart' as path;
 class FileToAppStoreConnectBuildDistributor extends BuildDistributor {
   ///
   const FileToAppStoreConnectBuildDistributor({
+    required this.runner,
     required this.projectDirectory,
     required InfraBuildConfiguration configuration,
     required BuildDistributorType buildDistributorType,
-    this.runner = const ShellRunner(),
   }) : super(buildDistributorType, configuration);
 
   ///

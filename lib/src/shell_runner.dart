@@ -7,7 +7,10 @@ import 'package:meta/meta.dart';
 ///
 class ShellRunner {
   ///
-  const ShellRunner();
+  const ShellRunner({this.workingDirectory});
+
+  ///
+  final Directory? workingDirectory;
 
   ///
   Future<ShellOutput> executeAsync(
@@ -25,6 +28,7 @@ class ShellRunner {
         runInShell: true,
         environment: environment,
         mode: ProcessStartMode.detached,
+        workingDirectory: workingDirectory?.path,
       );
 
       final Future<void> stdoutFuture = process.stdout

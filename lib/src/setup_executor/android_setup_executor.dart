@@ -8,9 +8,9 @@ import 'package:db_infra/src/shell_runner.dart';
 class AndroidSetupExecutor extends SetupExecutor {
   ///
   const AndroidSetupExecutor({
-    required InfraSetupConfiguration configuration,
+    required this.runner,
     required Directory infraDirectory,
-    this.runner = const ShellRunner(),
+    required InfraSetupConfiguration configuration,
   }) : super(configuration, infraDirectory);
 
   ///

@@ -40,13 +40,13 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
   ///
   const FlutterIosBuildExecutor({
+    required this.runner,
     required this.provisionProfilesManager,
     required this.certificatesManager,
     required this.bundleIdManager,
     required Directory projectDirectory,
     required InfraBuildConfiguration configuration,
     String? buildFlavor,
-    this.runner = const ShellRunner(),
     this.environmentVariableHandler,
   }) : super(
           buildFlavor: buildFlavor,
