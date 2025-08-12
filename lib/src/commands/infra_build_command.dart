@@ -155,29 +155,33 @@ class InfraBuildCommand extends BaseCommand {
         certificatesManager: certificatesManager,
         provisionProfilesManager: profilesManager,
       ).build();
+
+      final File outputCopy = Directory.systemTemp.copyFile(iosFlutterOutput);
+
+      await Future.forEach(
+        buildDistributors,
+        (BuildDistributor distributor) async {
+          switch (distributor.buildDistributorType) {
+            case BuildDistributorType.directory:
+              return distributor.distribute(iosFlutterOutput);
+            case BuildDistributorType.appStoreConnect:
+              return distributor.distribute(outputCopy);
+          }
+        },
+      );
+
+      BDLogger().info(
+        'iOS application created successfully: ${iosFlutterOutput.path}',
+      );
     } on Object catch (_) {
       certificatesManager.cleanupLocally();
       rethrow;
     }
 
-    await Future.forEach(
-      buildDistributors,
-      (BuildDistributor distributor) async {
-        switch (distributor.buildDistributorType) {
-          case BuildDistributorType.directory:
-          case BuildDistributorType.appStoreConnect:
-            return distributor.distribute(iosFlutterOutput);
-        }
-      },
-    );
-
-    BDLogger().info(
-      'iOS application created successfully: ${iosFlutterOutput.path}',
-    );
-
     BDLogger().info(
       'Building Android application. flavor: $buildFlavor',
     );
+
 
     final File androidFlutterOutput = await FlutterAndroidBuildExecutor(
       buildFlavor: buildFlavor,

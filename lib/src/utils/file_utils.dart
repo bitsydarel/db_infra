@@ -70,6 +70,13 @@ extension DirectoryExtensions on Directory {
   }
 
   ///
+  File moveFile(final File file) {
+    // Move the file to the current directory.
+    final String newPath = path_util.join(path, path_util.basename(file.path));
+    return file.renameSync(newPath);
+  }
+
+  ///
   Directory createInfraDirectory() {
     return Directory('$path/.infra')..createSync();
   }
