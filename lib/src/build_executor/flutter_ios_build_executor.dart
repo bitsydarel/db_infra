@@ -519,6 +519,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       );
 
       BDLogger()
+        ..info('XCODE ARCHIVE FAILED')
         ..info(buildArchive.stdout)
         ..error(buildArchive.stderr, exception);
 
@@ -526,7 +527,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     }
 
     BDLogger().info(
-      'XCODE ARCHIVE OUTPUT:\n${buildArchive.stderr}\n${buildArchive.stdout}',
+      'XCODE ARCHIVE OUTPUT:\n${buildArchive.stdout}',
     );
 
     final ShellOutput exportArchive = runner.execute(
@@ -548,6 +549,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       );
 
       BDLogger()
+        ..info('XCODE EXPORT FAILED')
         ..info(exportArchive.stdout)
         ..error(exportArchive.stderr, exception);
 
@@ -555,7 +557,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     }
 
     BDLogger().info(
-      'XCODE EXPORT OUTPUT:\n${exportArchive.stderr}\n${exportArchive.stdout}',
+      'XCODE EXPORT OUTPUT:\n${exportArchive.stdout}',
     );
   }
 }

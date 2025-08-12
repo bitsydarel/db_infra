@@ -142,6 +142,10 @@ class InfraBuildCommand extends BaseCommand {
     final File iosFlutterOutput;
 
     try {
+      BDLogger().info(
+        'Building iOS application. flavor: $buildFlavor',
+      );
+
       iosFlutterOutput = await FlutterIosBuildExecutor(
         buildFlavor: buildFlavor,
         projectDirectory: projectDir,
@@ -167,6 +171,14 @@ class InfraBuildCommand extends BaseCommand {
       },
     );
 
+    BDLogger().info(
+      'iOS application created successfully: ${iosFlutterOutput.path}',
+    );
+
+    BDLogger().info(
+      'Building Android application. flavor: $buildFlavor',
+    );
+
     final File androidFlutterOutput = await FlutterAndroidBuildExecutor(
       buildFlavor: buildFlavor,
       projectDirectory: projectDir,
@@ -184,6 +196,10 @@ class InfraBuildCommand extends BaseCommand {
             return Future<void>.value();
         }
       },
+    );
+
+    BDLogger().info(
+      'Android application created successfully: ${androidFlutterOutput.path}',
     );
 
     await cleanup(buildConfiguration, infraDir);

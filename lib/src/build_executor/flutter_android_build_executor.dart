@@ -84,11 +84,14 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
       );
 
       BDLogger()
+        ..info('GRADLE BUILD FAILED')
         ..info(output.stdout)
         ..error(output.stderr, exception);
 
       throw exception;
     }
+
+    BDLogger().info('GRADLE BUILD OUTPUT:\n${output.stdout}');
 
     final File? outputFile =
         configuration.androidBuildOutputType.outputFile(projectDirectory);
