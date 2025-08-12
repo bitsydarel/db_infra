@@ -156,19 +156,21 @@ class InfraBuildCommand extends BaseCommand {
         provisionProfilesManager: profilesManager,
       ).build();
 
-      final File outputCopy = Directory.systemTemp.copyFile(iosFlutterOutput);
-
       await Future.forEach(
         buildDistributors,
         (BuildDistributor distributor) async {
+          final File outputCopy =
+              Directory.systemTemp.copyFile(iosFlutterOutput);
+
           switch (distributor.buildDistributorType) {
             case BuildDistributorType.directory:
-              return distributor.distribute(iosFlutterOutput);
             case BuildDistributorType.appStoreConnect:
               return distributor.distribute(outputCopy);
           }
         },
       );
+
+      iosFlutterOutput.deleteSync();
 
       BDLogger().info(
         'iOS application created successfully: ${iosFlutterOutput.path}',
@@ -182,7 +184,6 @@ class InfraBuildCommand extends BaseCommand {
       'Building Android application. flavor: $buildFlavor',
     );
 
-
     final File androidFlutterOutput = await FlutterAndroidBuildExecutor(
       buildFlavor: buildFlavor,
       projectDirectory: projectDir,
@@ -193,14 +194,18 @@ class InfraBuildCommand extends BaseCommand {
     await Future.forEach(
       buildDistributors,
       (BuildDistributor distributor) async {
+        final File outputCopy = Directory.systemTemp.copyFile(iosFlutterOutput);
+
         switch (distributor.buildDistributorType) {
           case BuildDistributorType.directory:
-            return distributor.distribute(androidFlutterOutput);
+            return distributor.distribute(outputCopy);
           case BuildDistributorType.appStoreConnect:
             return Future<void>.value();
         }
       },
     );
+
+    androidFlutterOutput.deleteSync();
 
     BDLogger().info(
       'Android application created successfully: ${androidFlutterOutput.path}',
