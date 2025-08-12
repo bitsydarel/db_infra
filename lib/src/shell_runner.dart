@@ -27,7 +27,7 @@ class ShellRunner {
         arguments,
         runInShell: true,
         environment: environment,
-        mode: ProcessStartMode.detached,
+        mode: ProcessStartMode.detachedWithStdio,
         workingDirectory: workingDirectory?.path,
       );
 
