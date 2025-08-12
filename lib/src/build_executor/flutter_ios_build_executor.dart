@@ -237,7 +237,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         <String>[
           'build',
           'ipa',
-          if (flutterFlavor != null) ...['--flavor', flutterFlavor],
+          if (flutterFlavor != null) ...<String>['--flavor', flutterFlavor],
           '--release',
           '--no-codesign',
           if (dartDefines != null) ...dartDefines,
@@ -277,7 +277,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         <String>[
           'build',
           configuration.iosBuildOutputType.name,
-          if (flutterFlavor != null) ...['--flavor', flutterFlavor],
+          if (flutterFlavor != null) ...<String>['--flavor', flutterFlavor],
           '--release',
           '--verbose',
           '--export-options-plist',

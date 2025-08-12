@@ -180,37 +180,41 @@ class InfraBuildCommand extends BaseCommand {
       rethrow;
     }
 
-    BDLogger().info(
-      'Building Android application. flavor: $buildFlavor',
-    );
+    try {
+      BDLogger().info(
+        'Building Android application. flavor: $buildFlavor',
+      );
 
-    final File androidFlutterOutput = await FlutterAndroidBuildExecutor(
-      buildFlavor: buildFlavor,
-      projectDirectory: projectDir,
-      configuration: buildConfiguration,
-      environmentVariableHandler: envHandler,
-    ).build();
+      final File androidFlutterOutput = await FlutterAndroidBuildExecutor(
+        buildFlavor: buildFlavor,
+        projectDirectory: projectDir,
+        configuration: buildConfiguration,
+        environmentVariableHandler: envHandler,
+      ).build();
 
-    await Future.forEach(
-      buildDistributors,
-      (BuildDistributor distributor) async {
-        final File outputCopy =
-            Directory.systemTemp.copyFile(androidFlutterOutput);
+      await Future.forEach(
+        buildDistributors,
+        (BuildDistributor distributor) async {
+          final File outputCopy =
+              Directory.systemTemp.copyFile(androidFlutterOutput);
 
-        switch (distributor.buildDistributorType) {
-          case BuildDistributorType.directory:
-            return distributor.distribute(outputCopy);
-          case BuildDistributorType.appStoreConnect:
-            return Future<void>.value();
-        }
-      },
-    );
+          switch (distributor.buildDistributorType) {
+            case BuildDistributorType.directory:
+              return distributor.distribute(outputCopy);
+            case BuildDistributorType.appStoreConnect:
+              return Future<void>.value();
+          }
+        },
+      );
 
-    androidFlutterOutput.deleteSync();
+      androidFlutterOutput.deleteSync();
 
-    BDLogger().info(
-      'Android application created successfully: ${androidFlutterOutput.path}',
-    );
+      BDLogger().info(
+        'Android app created successfully: ${androidFlutterOutput.path}',
+      );
+    } on Object catch (_) {
+      rethrow;
+    }
 
     await cleanup(buildConfiguration, infraDir);
   }

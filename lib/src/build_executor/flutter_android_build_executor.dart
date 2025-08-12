@@ -33,6 +33,8 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
 
   @override
   Future<File> build() async {
+    BDLogger().info('Starting Android Flutter build...');
+
     final Directory androidFlutterDir = Directory(
       path.join(projectDirectory.path, 'android'),
     );

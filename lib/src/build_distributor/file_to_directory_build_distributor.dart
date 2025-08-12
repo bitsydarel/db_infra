@@ -19,7 +19,10 @@ class FileToDirectoryBuildDistributor extends BuildDistributor {
 
   @override
   Future<void> distribute(File output) async {
-    final File buildOutput = buildOutputDirectory.copyFile(output);
+    BDLogger().info(
+      'Moving ${output.path} to ${buildOutputDirectory.path}',
+    );
+    final File buildOutput = buildOutputDirectory.moveFile(output);
     BDLogger().info('Output: ${buildOutput.path}');
   }
 }
