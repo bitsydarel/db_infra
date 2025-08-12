@@ -1,3 +1,7 @@
+## 0.5.2
+
+- Directory distribution now delete teh file after build completion.
+
 ## 0.5.1
 
 - Added support for build flavors in Flutter applications.
