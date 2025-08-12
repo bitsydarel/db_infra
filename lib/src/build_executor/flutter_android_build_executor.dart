@@ -98,10 +98,9 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
     final File? outputFile =
         configuration.androidBuildOutputType.outputFile(projectDirectory);
 
-    if (outputFile == null) {
+    if (outputFile == null || !outputFile.existsSync()) {
       throw UnrecoverableException(
-        'Could not find build android '
-        '${configuration.androidBuildOutputType.name}',
+        'Could not find ios build output file at ${outputFile?.path}',
         ExitCode.software.code,
       );
     }

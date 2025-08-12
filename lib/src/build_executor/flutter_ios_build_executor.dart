@@ -310,9 +310,9 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     final File? outputFile =
         configuration.iosBuildOutputType.outputFile(projectDirectory);
 
-    if (outputFile == null) {
+    if (outputFile == null || !outputFile.existsSync()) {
       throw UnrecoverableException(
-        'Could not find build ios ${configuration.iosBuildOutputType.name}',
+        'Could not find ios build output file at ${outputFile?.path}',
         ExitCode.software.code,
       );
     }
