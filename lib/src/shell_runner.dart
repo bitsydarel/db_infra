@@ -2,7 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:bdlogging/bdlogging.dart';
+import 'package:io/io.dart';
 import 'package:meta/meta.dart';
+
+const String _kCommandFailed = 'COMMAND FAILED:';
 
 ///
 class ShellRunner {
@@ -20,6 +23,7 @@ class ShellRunner {
   ]) async {
     final StringBuffer stdoutBuffer = StringBuffer();
     final StringBuffer stderrBuffer = StringBuffer();
+    int exitCode = ExitCode.software.code;
 
     try {
       final Process process = await Process.start(
@@ -27,7 +31,6 @@ class ShellRunner {
         arguments,
         runInShell: true,
         environment: environment,
-        mode: ProcessStartMode.detachedWithStdio,
         workingDirectory: workingDirectory?.path,
       );
 
@@ -46,6 +49,7 @@ class ShellRunner {
           .forEach(stderrBuffer.writeln);
 
       await Future.wait(<Future<void>>[stdoutFuture, stderrFuture]);
+      exitCode = await process.exitCode;
     } on Object catch (e) {
       stderrBuffer.writeln('Error starting process: $e');
       BDLogger().error('Error starting process: $e', e);
@@ -53,7 +57,9 @@ class ShellRunner {
 
     return ShellOutput(
       stdout: stdoutBuffer.toString(),
-      stderr: stdoutBuffer.toString(),
+      stderr: exitCode != 0
+          ? '$_kCommandFailed\n${stderrBuffer.toString()}'
+          : stderrBuffer.toString(),
     );
   }
 
@@ -74,7 +80,9 @@ class ShellRunner {
 
     return ShellOutput(
       stdout: result.stdout.toString(),
-      stderr: result.stderr.toString(),
+      stderr: result.exitCode != 0
+          ? '$_kCommandFailed\n${result.stderr.toString()}'
+          : result.stderr.toString(),
     );
   }
 }
@@ -101,9 +109,12 @@ class ShellOutput {
     final String trimmedStderr = stderr.trim().toLowerCase();
     final String trimmedStdout = stdout.trim().toLowerCase();
 
-    // If stderr is empty, likely success
     if (trimmedStderr.isEmpty) {
       return false;
+    }
+
+    if (trimmedStderr.contains(_kCommandFailed.toLowerCase())) {
+      return true;
     }
 
     // Check if stdout indicates success despite stderr content

@@ -514,7 +514,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       ],
     );
 
-    if (!buildArchive.contains('ARCHIVE SUCCEEDED')) {
+    if (buildArchive.isFailure()) {
       final UnrecoverableException exception = UnrecoverableException(
         buildArchive.stderr,
         ExitCode.tempFail.code,
@@ -544,7 +544,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       ],
     );
 
-    if (!exportArchive.stdout.contains('EXPORT SUCCEEDED')) {
+    if (exportArchive.isFailure()) {
       final UnrecoverableException exception = UnrecoverableException(
         exportArchive.stderr,
         ExitCode.tempFail.code,
