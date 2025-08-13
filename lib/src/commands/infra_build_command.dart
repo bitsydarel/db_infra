@@ -140,14 +140,12 @@ class InfraBuildCommand extends BaseCommand {
 
     await decryptInfraFiles(infraDir, buildConfiguration);
 
-    final File iosFlutterOutput;
-
     try {
       BDLogger().info(
         'Building iOS application. flavor: $buildFlavor',
       );
 
-      iosFlutterOutput = await FlutterIosBuildExecutor(
+      final File iosFlutterOutput = await FlutterIosBuildExecutor(
         buildFlavor: buildFlavor,
         projectDirectory: projectDir,
         bundleIdManager: bundleIdManager,

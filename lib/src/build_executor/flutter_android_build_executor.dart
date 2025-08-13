@@ -46,7 +46,7 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
       path.join(androidFlutterDir.path, 'local.properties'),
     );
 
-    final flutterFlavor = buildFlavor;
+    final String? flutterFlavor = buildFlavor;
 
     updateAndroidProjectSigningConfigurationO(
       infraAndroidConfig,

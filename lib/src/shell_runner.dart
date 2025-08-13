@@ -107,33 +107,16 @@ class ShellOutput {
   ///
   bool isFailure() {
     final String trimmedStderr = stderr.trim().toLowerCase();
-    final String trimmedStdout = stdout.trim().toLowerCase();
-
-    if (trimmedStderr.isEmpty) {
-      return false;
-    }
 
     if (trimmedStderr.contains(_kCommandFailed.toLowerCase())) {
       return true;
     }
 
-    // Check if stdout indicates success despite stderr content
-    final RegExp successPattern = RegExp(
-      r'(?:^|\s)(success|succeeded|done|finished|ok)(?:\s|:|$)',
-      caseSensitive: false,
-    );
-
-    if (successPattern.hasMatch(trimmedStdout)) {
-      return false; // Success indicated in stdout
+    if (trimmedStderr.isEmpty) {
+      return false;
     }
 
-    // Check stderr for actual errors
-    final RegExp errorPattern = RegExp(
-      r'(?:^|\s)(error|failed|failure|fatal)(?:\s|:|$)(?!.*(?:success|succeeded|complete|fix|resolve|handle))',
-      caseSensitive: false,
-    );
-
-    return errorPattern.hasMatch(trimmedStderr);
+    return false;
   }
 
   ///
