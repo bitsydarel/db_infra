@@ -253,7 +253,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         },
       );
 
-      if (output.stderr.isNotEmpty) {
+      if (output.isFailure()) {
         final UnrecoverableException exception =
             UnrecoverableException(output.stderr, ExitCode.tempFail.code);
 
@@ -287,7 +287,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
         <String, String>{'CI': 'true'},
       );
 
-      if (output.stderr.isNotEmpty) {
+      if (output.isFailure()) {
         cleanupProjectSigningConfiguration(codeSigningConfig, releaseConfig);
 
         final UnrecoverableException exception =

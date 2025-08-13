@@ -34,11 +34,15 @@ class ShellRunner {
       final Future<void> stdoutFuture = process.stdout
           .transform(utf8.decoder)
           .transform(const LineSplitter())
+          .map((String line) => line.trim())
+          .where((String line) => line.isNotEmpty)
           .forEach(stdoutBuffer.writeln);
 
       final Future<void> stderrFuture = process.stderr
           .transform(utf8.decoder)
           .transform(const LineSplitter())
+          .map((String line) => line.trim())
+          .where((String line) => line.isNotEmpty)
           .forEach(stderrBuffer.writeln);
 
       await Future.wait(<Future<void>>[stdoutFuture, stderrFuture]);
@@ -86,6 +90,35 @@ class ShellOutput {
 
   ///
   const ShellOutput({required this.stdout, required this.stderr});
+
+  ///
+  bool isFailure() {
+    final String trimmedStderr = stderr.trim().toLowerCase();
+    final String trimmedStdout = stdout.trim().toLowerCase();
+
+    // If stderr is empty, likely success
+    if (trimmedStderr.isEmpty) {
+      return false;
+    }
+
+    // Check if stdout indicates success despite stderr content
+    final RegExp successPattern = RegExp(
+      r'(?:^|\s)(success|succeeded|done|finished|ok)(?:\s|:|$)',
+      caseSensitive: false,
+    );
+
+    if (successPattern.hasMatch(trimmedStdout)) {
+      return false; // Success indicated in stdout
+    }
+
+    // Check stderr for actual errors
+    final RegExp errorPattern = RegExp(
+      r'(?:^|\s)(error|failed|failure|fatal)(?:\s|:|$)(?!.*(?:success|succeeded|complete|fix|resolve|handle))',
+      caseSensitive: false,
+    );
+
+    return errorPattern.hasMatch(trimmedStderr);
+  }
 
   @override
   bool operator ==(Object other) =>
