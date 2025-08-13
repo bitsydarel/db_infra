@@ -46,6 +46,8 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
       path.join(androidFlutterDir.path, 'local.properties'),
     );
 
+    final flutterFlavor = buildFlavor;
+
     updateAndroidProjectSigningConfigurationO(
       infraAndroidConfig,
       configuration.androidKeyAlias,
@@ -70,6 +72,7 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
       <String>[
         'build',
         configuration.androidBuildOutputType.name,
+        if (flutterFlavor != null) ...['--flavor', flutterFlavor],
         '--release',
         if (dartDefines != null) ...dartDefines
       ],
