@@ -80,7 +80,7 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
 
     infraAndroidConfig.deleteSync();
 
-    if (output.stdout.contains('BUILD FAILED') ||
+    if (output.contains('BUILD FAILED') ||
         output.stderr.contains('BUILD FAILED')) {
       final UnrecoverableException exception = UnrecoverableException(
         output.stderr,

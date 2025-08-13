@@ -53,7 +53,7 @@ class FileToAppStoreConnectBuildDistributor extends BuildDistributor {
       ..createSync(recursive: true)
       ..writeAsBytesSync(configuration.iosAppStoreConnectKey.readAsBytesSync());
 
-    final ShellOutput commandOutput = await runner.executeAsync(
+    final ShellOutput command = await runner.executeAsync(
       'xcrun',
       <String>[
         'altool',
@@ -78,14 +78,11 @@ class FileToAppStoreConnectBuildDistributor extends BuildDistributor {
 
     Directory.current = oldPath;
 
-    if (commandOutput.stderr.isNotEmpty &&
-        !commandOutput.stdout.contains('No errors uploading')) {
-      BDLogger()
-        ..info(commandOutput.stdout)
-        ..info(commandOutput.stderr);
+    if (command.isFailure() && !command.contains('No errors uploading')) {
+      BDLogger().info(command.fullOutput());
 
       throw UnrecoverableException(
-        commandOutput.stderr,
+        command.stderr,
         ExitCode.tempFail.code,
       );
     }

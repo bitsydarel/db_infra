@@ -92,6 +92,11 @@ class ShellOutput {
   const ShellOutput({required this.stdout, required this.stderr});
 
   ///
+  String fullOutput() {
+    return '${stdout.trim()}\n${stderr.trim()}';
+  }
+
+  ///
   bool isFailure() {
     final String trimmedStderr = stderr.trim().toLowerCase();
     final String trimmedStdout = stdout.trim().toLowerCase();
@@ -118,6 +123,13 @@ class ShellOutput {
     );
 
     return errorPattern.hasMatch(trimmedStderr);
+  }
+
+  ///
+  bool contains(String pattern) {
+    final String lowerCasePattern = pattern.toLowerCase();
+    return stdout.toLowerCase().contains(lowerCasePattern) ||
+        stderr.toLowerCase().contains(lowerCasePattern);
   }
 
   @override

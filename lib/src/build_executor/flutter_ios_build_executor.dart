@@ -514,7 +514,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       ],
     );
 
-    if (!buildArchive.stdout.contains('ARCHIVE SUCCEEDED')) {
+    if (!buildArchive.contains('ARCHIVE SUCCEEDED')) {
       final UnrecoverableException exception = UnrecoverableException(
         buildArchive.stderr,
         ExitCode.tempFail.code,
@@ -522,7 +522,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
 
       BDLogger()
         ..info('XCODE ARCHIVE FAILED')
-        ..info(buildArchive.stdout)
+        ..info(buildArchive.fullOutput())
         ..error(buildArchive.stderr, exception);
 
       throw exception;
