@@ -41,9 +41,9 @@ class FlutterIosBuildExecutor extends BuildExecutor {
   ///
   const FlutterIosBuildExecutor({
     required this.runner,
-    required this.provisionProfilesManager,
-    required this.certificatesManager,
     required this.bundleIdManager,
+    required this.certificatesManager,
+    required this.provisionProfilesManager,
     required Directory projectDirectory,
     required InfraBuildConfiguration configuration,
     String? buildFlavor,
@@ -471,6 +471,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
     );
 
     final List<String> xcodeArguments = <String>[
+      '-quiet',
       '-allowProvisioningUpdates',
       '-allowProvisioningDeviceRegistration',
       '-authenticationKeyPath',
@@ -500,7 +501,7 @@ class FlutterIosBuildExecutor extends BuildExecutor {
       'xcodebuild',
       <String>[
         '-workspace',
-        'Runner.xcworkspace',
+        path.join('ios', 'Runner.xcworkspace'),
         '-scheme',
         if (scheme != null) scheme else 'Runner',
         '-configuration',
