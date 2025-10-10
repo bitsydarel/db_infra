@@ -64,11 +64,11 @@ extension ProvisionProfileTypeExtension on ProvisionProfileType {
   String get exportMethod {
     switch (this) {
       case ProvisionProfileType.iosAppDevelopment:
-        return 'development';
+        return 'debugging';
       case ProvisionProfileType.iosAppStore:
-        return 'app-store';
+        return 'app-store-connect';
       case ProvisionProfileType.iosAppAdhoc:
-        return 'ad-hoc';
+        return 'release-testing';
       case ProvisionProfileType.iosAppInHouse:
         return 'enterprise';
       case ProvisionProfileType.other:

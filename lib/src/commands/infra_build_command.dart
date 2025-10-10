@@ -159,8 +159,7 @@ class InfraBuildCommand extends BaseCommand {
       await Future.forEach(
         buildDistributors,
         (BuildDistributor distributor) async {
-          final File outputCopy =
-              Directory.systemTemp.copyFile(iosFlutterOutput);
+          final File outputCopy = iosFlutterOutput.copyToTemp();
 
           switch (distributor.buildDistributorType) {
             case BuildDistributorType.directory:
@@ -196,8 +195,7 @@ class InfraBuildCommand extends BaseCommand {
       await Future.forEach(
         buildDistributors,
         (BuildDistributor distributor) async {
-          final File outputCopy =
-              Directory.systemTemp.copyFile(androidFlutterOutput);
+          final File outputCopy = androidFlutterOutput.copyToTemp();
 
           switch (distributor.buildDistributorType) {
             case BuildDistributorType.directory:

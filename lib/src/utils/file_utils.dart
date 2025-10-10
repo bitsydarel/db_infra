@@ -33,7 +33,7 @@ extension FileExtensions on File {
   /// Archive the input files in the [File] using `.zip` format.
   Future<void> zip(List<File> intputFiles) async {
     final List<String> paths =
-    intputFiles.map((File file) => file.path).toList();
+        intputFiles.map((File file) => file.path).toList();
     // zipFile.path,
     final ZipFileEncoder encoder = ZipFileEncoder()..create(path);
     for (final String path in paths) {
@@ -46,6 +46,24 @@ extension FileExtensions on File {
     }
     encoder.close();
     throw UnimplementedError();
+  }
+
+  /// Copy the current file to a temporary directory and return the copied file.
+  File copyToTemp() {
+    final Directory _tempDir = Directory(
+      path_util.join(
+        Directory.systemTemp.path,
+        DateTime.now().microsecondsSinceEpoch.toString(),
+      ),
+    )..createSync(recursive: true);
+
+    final String _tempFilePath = path_util.join(
+      _tempDir.path,
+      path_util.basename(path),
+    );
+
+    final File outputCopy = copySync(_tempFilePath);
+    return outputCopy;
   }
 }
 
