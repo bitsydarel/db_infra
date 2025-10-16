@@ -284,6 +284,78 @@ class InfraBuildConfiguration extends Configuration {
     );
   }
 
+  /// Creates a copy of the current [InfraBuildConfiguration] instance.
+  InfraBuildConfiguration copyWith({
+    String? androidAppId,
+    String? iosAppId,
+    String? iosAppStoreConnectKeyId,
+    String? iosAppStoreConnectKeyIssuer,
+    File? iosAppStoreConnectKey,
+    Storage? storage,
+    Encryptor? encryptor,
+    StorageType? storageType,
+    EncryptorType? encryptorType,
+    IosBuildOutputType? iosBuildOutputType,
+    AndroidBuildOutputType? androidBuildOutputType,
+    ProvisionProfileType? iosProvisionProfileType,
+    String? androidKeyAlias,
+    String? androidKeyPassword,
+    File? androidStoreFile,
+    String? androidStorePassword,
+    File? iosExportOptionsPlist,
+    IosBuildSigningType? iosSigningType,
+    File? iosCertificateSigningRequest,
+    File? iosCertificateSigningRequestPublicKey,
+    File? iosCertificateSigningRequestPrivateKey,
+    String? iosCertificateSigningRequestName,
+    String? iosCertificateSigningRequestEmail,
+    String? iosProvisionProfileName,
+    String? iosCertificateId,
+    String? iosDeveloperTeamId,
+  }) {
+    return InfraBuildConfiguration(
+        androidAppId: androidAppId ?? this.androidAppId,
+        iosAppId: iosAppId ?? this.iosAppId,
+        iosAppStoreConnectKeyId:
+            iosAppStoreConnectKeyId ?? this.iosAppStoreConnectKeyId,
+        iosAppStoreConnectKeyIssuer:
+            iosAppStoreConnectKeyIssuer ?? this.iosAppStoreConnectKeyIssuer,
+        iosAppStoreConnectKey:
+            iosAppStoreConnectKey ?? this.iosAppStoreConnectKey,
+        storage: storage ?? this.storage,
+        encryptor: encryptor ?? this.encryptor,
+        storageType: storageType ?? this.storageType,
+        encryptorType: encryptorType ?? this.encryptorType,
+        iosBuildOutputType: iosBuildOutputType ?? this.iosBuildOutputType,
+        androidBuildOutputType:
+            androidBuildOutputType ?? this.androidBuildOutputType,
+        iosProvisionProfileType:
+            iosProvisionProfileType ?? this.iosProvisionProfileType,
+        androidKeyAlias: androidKeyAlias ?? this.androidKeyAlias,
+        androidKeyPassword: androidKeyPassword ?? this.androidKeyPassword,
+        androidStoreFile: androidStoreFile ?? this.androidStoreFile,
+        androidStorePassword: androidStorePassword ?? this.androidStorePassword,
+        iosExportOptionsPlist:
+            iosExportOptionsPlist ?? this.iosExportOptionsPlist,
+        iosSigningType: iosSigningType ?? this.iosSigningType,
+        iosCertificateSigningRequest:
+            iosCertificateSigningRequest ?? this.iosCertificateSigningRequest,
+        iosCertificateSigningRequestPublicKey:
+            iosCertificateSigningRequestPublicKey ??
+                this.iosCertificateSigningRequestPublicKey,
+        iosCertificateSigningRequestPrivateKey:
+            iosCertificateSigningRequestPrivateKey ??
+                this.iosCertificateSigningRequestPrivateKey,
+        iosCertificateSigningRequestName: iosCertificateSigningRequestName ??
+            this.iosCertificateSigningRequestName,
+        iosCertificateSigningRequestEmail: iosCertificateSigningRequestEmail ??
+            this.iosCertificateSigningRequestEmail,
+        iosProvisionProfileName:
+            iosProvisionProfileName ?? this.iosProvisionProfileName,
+        iosCertificateId: iosCertificateId ?? this.iosCertificateId,
+        iosDeveloperTeamId: iosDeveloperTeamId ?? this.iosDeveloperTeamId);
+  }
+
   /// Converts the `InfraBuildConfiguration` instance into a JSON-compatible
   /// `Map<String, dynamic>`. This method serializes all the properties of the
   /// configuration into key-value pairs, making it suitable for storage or

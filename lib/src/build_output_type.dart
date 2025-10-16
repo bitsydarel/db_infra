@@ -56,7 +56,7 @@ extension AndroidBuildOutputTypeExtension on AndroidBuildOutputType {
         break;
       case AndroidBuildOutputType.appbundle:
         outputDirectory = Directory(
-          path.join(projectDirectory.path, 'build/app/outputs/bundle/release'),
+          path.join(projectDirectory.path, 'build/app/outputs/bundle'),
         );
         releaseFileFinder = Glob('**-release.aab');
         break;

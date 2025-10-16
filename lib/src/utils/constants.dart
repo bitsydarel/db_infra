@@ -149,3 +149,6 @@ const String infraConfigFileArg = 'config-file';
 
 /// Infrastructure aes encryptor password.
 const String infraAesEncryptorPasswordArg = 'aes-encryptor-password';
+
+/// Infrastructure build target platform argument.
+const String infraBuildTargetPlatformArg = 'build-target-platform';

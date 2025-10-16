@@ -138,7 +138,7 @@ class InfraSetupCommand extends BaseCommand {
         infraAndroidBuildOutputTypeArg,
         help: 'Specify the infrastructure android build output type',
         allowed: AndroidBuildOutputType.values.asNameList(),
-        defaultsTo: AndroidBuildOutputType.apk.name,
+        defaultsTo: AndroidBuildOutputType.appbundle.name,
       )
       ..addOption(
         infraStorageTypeArg,

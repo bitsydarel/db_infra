@@ -9,6 +9,8 @@ import 'package:db_infra/src/apple/provision_profile/provision_profile_manager.d
 import 'package:db_infra/src/build_distributor/build_distributor.dart';
 import 'package:db_infra/src/build_executor/build_executor.dart';
 import 'package:db_infra/src/build_executor/flutter_android_build_executor.dart';
+import 'package:db_infra/src/build_output_type.dart';
+import 'package:db_infra/src/build_target_platform.dart';
 import 'package:db_infra/src/commands/base_command.dart';
 import 'package:db_infra/src/configuration/configuration.dart';
 import 'package:db_infra/src/environment_variable_handler/environment_variable_handler.dart';
@@ -35,6 +37,21 @@ class InfraBuildCommand extends BaseCommand {
           return e.name;
         }),
         defaultsTo: <String>[BuildDistributorType.directory.name],
+      )
+      ..addOption(
+        infraAndroidBuildOutputTypeArg,
+        help: 'Specify the infrastructure android build output type',
+        allowed: AndroidBuildOutputType.values.asNameList(),
+        defaultsTo: AndroidBuildOutputType.appbundle.name,
+      )
+      ..addMultiOption(
+        infraBuildTargetPlatformArg,
+        help: 'Specify the infrastructure build target platform',
+        allowed: BuildTargetPlatform.values.asNameList(),
+        defaultsTo: <String>[
+          BuildTargetPlatform.android.name,
+          BuildTargetPlatform.ios.name
+        ],
       )
       ..addOption(
         infraBuildEnvVariableTypeArg,
@@ -92,9 +109,9 @@ class InfraBuildCommand extends BaseCommand {
     final String? aesEncryptorPassword =
         commandArgs.parseOptionalString(infraAesEncryptorPasswordArg);
 
-    final InfraBuildConfiguration buildConfiguration = await loadConfiguration(
-      configuration: configurationFile,
+    InfraBuildConfiguration buildConfiguration = await loadConfiguration(
       infraDirectory: infraDir,
+      configuration: configurationFile,
       aesPassword: aesEncryptorPassword,
     );
 
@@ -103,6 +120,19 @@ class InfraBuildCommand extends BaseCommand {
 
     final List<BuildDistributorType> buildDistributorTypes =
         _getBuildDistributorTypes(commandArgs);
+
+    final List<BuildTargetPlatform> buildTargetPlatforms =
+        _getBuildTargetPlatforms(commandArgs);
+
+    final AndroidBuildOutputType? androidBuildOutputType = commandArgs
+        .parseOptionalString(infraAndroidBuildOutputTypeArg)
+        ?.asAndroidBuildOutputType();
+
+    if (androidBuildOutputType != null) {
+      buildConfiguration = buildConfiguration.copyWith(
+        androidBuildOutputType: androidBuildOutputType,
+      );
+    }
 
     final List<BuildDistributor> buildDistributors = buildDistributorTypes.map((
       BuildDistributorType e,
@@ -140,79 +170,83 @@ class InfraBuildCommand extends BaseCommand {
 
     await decryptInfraFiles(infraDir, buildConfiguration);
 
-    try {
-      BDLogger().info(
-        'Building iOS application. flavor: $buildFlavor',
-      );
+    if (buildTargetPlatforms.contains(BuildTargetPlatform.ios)) {
+      try {
+        BDLogger().info(
+          'Building iOS application. flavor: $buildFlavor',
+        );
 
-      final File iosFlutterOutput = await FlutterIosBuildExecutor(
-        buildFlavor: buildFlavor,
-        projectDirectory: projectDir,
-        bundleIdManager: bundleIdManager,
-        configuration: buildConfiguration,
-        environmentVariableHandler: envHandler,
-        certificatesManager: certificatesManager,
-        provisionProfilesManager: profilesManager,
-        runner: ShellRunner(workingDirectory: projectDir),
-      ).build();
+        final File iosFlutterOutput = await FlutterIosBuildExecutor(
+          buildFlavor: buildFlavor,
+          projectDirectory: projectDir,
+          bundleIdManager: bundleIdManager,
+          configuration: buildConfiguration,
+          environmentVariableHandler: envHandler,
+          certificatesManager: certificatesManager,
+          provisionProfilesManager: profilesManager,
+          runner: ShellRunner(workingDirectory: projectDir),
+        ).build();
 
-      await Future.forEach(
-        buildDistributors,
-        (BuildDistributor distributor) async {
-          final File outputCopy = iosFlutterOutput.copyToTemp();
+        await Future.forEach(
+          buildDistributors,
+          (BuildDistributor distributor) async {
+            final File outputCopy = iosFlutterOutput.copyToTemp();
 
-          switch (distributor.buildDistributorType) {
-            case BuildDistributorType.directory:
-            case BuildDistributorType.appStoreConnect:
-              return distributor.distribute(outputCopy);
-          }
-        },
-      );
+            switch (distributor.buildDistributorType) {
+              case BuildDistributorType.directory:
+              case BuildDistributorType.appStoreConnect:
+                return distributor.distribute(outputCopy);
+            }
+          },
+        );
 
-      iosFlutterOutput.deleteSync();
+        iosFlutterOutput.deleteSync();
 
-      BDLogger().info(
-        'iOS application created successfully: ${iosFlutterOutput.path}',
-      );
-    } on Object catch (_) {
-      certificatesManager.cleanupLocally();
-      rethrow;
+        BDLogger().info(
+          'iOS application created successfully: ${iosFlutterOutput.path}',
+        );
+      } on Object catch (_) {
+        certificatesManager.cleanupLocally();
+        rethrow;
+      }
     }
 
-    try {
-      BDLogger().info(
-        'Building Android application. flavor: $buildFlavor',
-      );
+    if (buildTargetPlatforms.contains(BuildTargetPlatform.android)) {
+      try {
+        BDLogger().info(
+          'Building Android application. flavor: $buildFlavor',
+        );
 
-      final File androidFlutterOutput = await FlutterAndroidBuildExecutor(
-        buildFlavor: buildFlavor,
-        projectDirectory: projectDir,
-        configuration: buildConfiguration,
-        environmentVariableHandler: envHandler,
-        runner: ShellRunner(workingDirectory: projectDir),
-      ).build();
+        final File androidFlutterOutput = await FlutterAndroidBuildExecutor(
+          buildFlavor: buildFlavor,
+          projectDirectory: projectDir,
+          configuration: buildConfiguration,
+          environmentVariableHandler: envHandler,
+          runner: ShellRunner(workingDirectory: projectDir),
+        ).build();
 
-      await Future.forEach(
-        buildDistributors,
-        (BuildDistributor distributor) async {
-          final File outputCopy = androidFlutterOutput.copyToTemp();
+        await Future.forEach(
+          buildDistributors,
+          (BuildDistributor distributor) async {
+            final File outputCopy = androidFlutterOutput.copyToTemp();
 
-          switch (distributor.buildDistributorType) {
-            case BuildDistributorType.directory:
-              return distributor.distribute(outputCopy);
-            case BuildDistributorType.appStoreConnect:
-              return Future<void>.value();
-          }
-        },
-      );
+            switch (distributor.buildDistributorType) {
+              case BuildDistributorType.directory:
+                return distributor.distribute(outputCopy);
+              case BuildDistributorType.appStoreConnect:
+                return Future<void>.value();
+            }
+          },
+        );
 
-      androidFlutterOutput.deleteSync();
+        androidFlutterOutput.deleteSync();
 
-      BDLogger().info(
-        'Android app created successfully: ${androidFlutterOutput.path}',
-      );
-    } on Object catch (_) {
-      rethrow;
+        BDLogger().info(
+          'Android app created successfully: ${androidFlutterOutput.path}',
+        );
+      } on Object catch (_) {
+        rethrow;
+      }
     }
 
     await cleanup(buildConfiguration, infraDir);
@@ -228,6 +262,18 @@ class InfraBuildCommand extends BaseCommand {
     }
 
     throw ArgumentError('$infraBuildDistributorTypeArg need to be specified');
+  }
+
+  List<BuildTargetPlatform> _getBuildTargetPlatforms(ArgResults args) {
+    final Object? argumentValue = args[infraBuildTargetPlatformArg];
+
+    if (argumentValue is List<String> && argumentValue.isNotEmpty) {
+      return argumentValue
+          .map((String e) => e.asBuildTargetPlatform())
+          .toList();
+    }
+
+    throw ArgumentError('$infraBuildTargetPlatformArg need to be specified');
   }
 
   BuildDistributor _getBuildDistributor(

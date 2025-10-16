@@ -72,7 +72,7 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
       <String>[
         'build',
         configuration.androidBuildOutputType.name,
-        if (flutterFlavor != null) ...['--flavor', flutterFlavor],
+        if (flutterFlavor != null) ...<String>['--flavor', flutterFlavor],
         '--release',
         if (dartDefines != null) ...dartDefines
       ],
@@ -104,7 +104,7 @@ class FlutterAndroidBuildExecutor extends BuildExecutor {
 
     if (outputFile == null || !outputFile.existsSync()) {
       throw UnrecoverableException(
-        'Could not find ios build output file at ${outputFile?.path}',
+        'Could not find android build output file at ${outputFile?.path}',
         ExitCode.software.code,
       );
     }
