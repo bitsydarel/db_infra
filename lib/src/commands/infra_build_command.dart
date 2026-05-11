@@ -154,14 +154,16 @@ class InfraBuildCommand extends BaseCommand {
       envHandler = _getEnvironmentVariableHandler(envHandlerType, commandArgs);
     }
 
-    final CertificatesManager certificatesManager =
-        buildConfiguration.getCertificatesManager();
+    CertificatesManager? certificatesManager;
+    ProvisionProfileManager? profilesManager;
+    BundleIdManager? bundleIdManager;
 
-    final ProvisionProfileManager profilesManager =
-        buildConfiguration.getProfilesManager(certificatesManager, infraDir);
-
-    final BundleIdManager bundleIdManager =
-        buildConfiguration.getBundleManager();
+    if (buildTargetPlatforms.contains(BuildTargetPlatform.ios)) {
+      certificatesManager = buildConfiguration.getCertificatesManager();
+      profilesManager =
+          buildConfiguration.getProfilesManager(certificatesManager, infraDir);
+      bundleIdManager = buildConfiguration.getBundleManager();
+    }
 
     BDLogger().info(
       'Building ${buildConfiguration.iosAppId} with '
@@ -179,11 +181,11 @@ class InfraBuildCommand extends BaseCommand {
         final File iosFlutterOutput = await FlutterIosBuildExecutor(
           buildFlavor: buildFlavor,
           projectDirectory: projectDir,
-          bundleIdManager: bundleIdManager,
+          bundleIdManager: bundleIdManager!,
           configuration: buildConfiguration,
           environmentVariableHandler: envHandler,
-          certificatesManager: certificatesManager,
-          provisionProfilesManager: profilesManager,
+          certificatesManager: certificatesManager!,
+          provisionProfilesManager: profilesManager!,
           runner: ShellRunner(workingDirectory: projectDir),
         ).build();
 
@@ -206,7 +208,7 @@ class InfraBuildCommand extends BaseCommand {
           'iOS application created successfully: ${iosFlutterOutput.path}',
         );
       } on Object catch (_) {
-        certificatesManager.cleanupLocally();
+        certificatesManager?.cleanupLocally();
         rethrow;
       }
     }
